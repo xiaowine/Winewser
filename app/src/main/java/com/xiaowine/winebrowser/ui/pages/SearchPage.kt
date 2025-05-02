@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.xiaowine.winebrowser.App
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Surface
@@ -39,19 +41,36 @@ import top.yukonga.miuix.kmp.icon.icons.useful.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
 
-@Preview(showSystemUi = true, device = "id:pixel_9_pro", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
+@Composable
+@Preview(showSystemUi = true, device = "spec:parent=pixel_fold")
+@Preview(showSystemUi = true)
+@Preview(showSystemUi = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES or android.content.res.Configuration.UI_MODE_TYPE_NORMAL)
+fun TestSearchPage() {
+    MiuixTheme {
+        App("search")
+    }
+}
+
 @Composable
 fun SearchPage() {
-    val historyList = listOf("赤霞111111aa珠", "梅洛", "霞多丽", "雷司令", "长相思")
+    val historyList = listOf("a", "b", "c", "d", "e" ,"c", "d", "e")
     var searchText by remember { mutableStateOf(TextFieldValue("")) }
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
+
+
+    SideEffect {
+        runCatching {
+            focusRequester.requestFocus()
+        }
+    }
 
     Surface {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .padding(top = 6.dp)
                 .padding(16.dp)
         ) {
             SearchField(searchText, focusRequester) {
@@ -107,14 +126,13 @@ fun HistoryItem(historyList: List<String>, onSelected: (String) -> Unit) {
     Spacer(modifier = Modifier.height(8.dp))
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
-        maxItemsInEachRow = 5,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         historyList.forEach { item ->
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(SmoothRoundedCornerShape(12.dp))
                     .background(MiuixTheme.colorScheme.dividerLine)
                     .clickable {
                         onSelected(item)

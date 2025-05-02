@@ -21,7 +21,7 @@ import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
 
 @Composable
-fun App() {
+fun App(startDestination: String = "home") {
     val navController = rememberNavController()
 
     val currentRoute = remember {
@@ -37,7 +37,9 @@ fun App() {
     ) {
         NavHost(
             navController = navController,
-            startDestination = "home",
+            startDestination = startDestination,
+            exitTransition = { fadeOut(targetAlpha = 1f) },
+            enterTransition = { fadeIn(initialAlpha = 1f) },
         ) {
             pageDestinations(navController)
         }
@@ -59,9 +61,6 @@ fun NavGraphBuilder.pageDestinations(
                     dampingRatio = Spring.DampingRatioLowBouncy,
                     stiffness = Spring.StiffnessLow
                 )
-            ) + fadeIn(
-                animationSpec = spring(),
-                initialAlpha = 0.5f
             )
         },
         exitTransition = {
@@ -71,34 +70,7 @@ fun NavGraphBuilder.pageDestinations(
                     dampingRatio = Spring.DampingRatioNoBouncy,
                     stiffness = Spring.StiffnessMediumLow
                 )
-            ) + fadeOut(
-                animationSpec = spring(),
-                targetAlpha = 1f
             )
         },
-        popEnterTransition = {
-            slideIntoContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Up,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioLowBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            ) + fadeIn(
-                animationSpec = spring(),
-                initialAlpha = 0.5f
-            )
-        },
-        popExitTransition = {
-            slideOutOfContainer(
-                towards = AnimatedContentTransitionScope.SlideDirection.Down,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMediumLow
-                )
-            ) + fadeOut(
-                animationSpec = spring(),
-                targetAlpha = 1f
-            )
-        }
     ) { SearchPage() }
 }

@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -30,6 +32,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.xiaowine.winebrowser.App
+import com.xiaowine.winebrowser.AppConfig
+import com.xiaowine.winebrowser.AppConfig.isPreview
+import com.xiaowine.winebrowser.utils.Utils.rememberPreviewableList
+import com.xiaowine.winebrowser.utils.Utils.rememberPreviewableState
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Surface
@@ -55,11 +61,16 @@ fun TestSearchPage() {
 
 @Composable
 fun SearchPage() {
-    val historyList = listOf("a", "b", "c", "d", "e", "c", "d", "e")
+    // 使用通用 rememberPreviewableList，指定同步逻辑
+    val historyList = rememberPreviewableState(
+        realData = { AppConfig.searchHistory },
+        previewData = listOf("百度", "知乎", "B站"),
+        onSync = { AppConfig.searchHistory = it }
+    )
+
     var searchText by remember { mutableStateOf(TextFieldValue("")) }
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
-
 
     SideEffect {
         runCatching {
@@ -76,10 +87,18 @@ fun SearchPage() {
                 .padding(16.dp)
         ) {
             SearchField(searchText, focusRequester) {
+                val value = it.text.trim()
                 searchText = it
+                if (value.isNotEmpty()) {
+                    if (!historyList.value.contains(value)) {
+                        val currentList = historyList.value.toMutableList()
+                        currentList.add(0, value.trim())
+                        historyList.value = currentList
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            HistoryItem(historyList) {
+            HistoryItem(historyList.value) {
                 searchText = TextFieldValue(it)
                 focusManager.clearFocus()
             }
@@ -91,7 +110,10 @@ fun SearchPage() {
 fun SearchField(searchText: TextFieldValue, focusRequester: FocusRequester, onValueChange: (TextFieldValue) -> Unit) {
     TextField(
         value = searchText,
-        onValueChange = { onValueChange(it) },
+        onValueChange = {
+            val filteredText = it.copy(text = it.text.replace("\n", ""))
+            onValueChange(filteredText)
+        },
         useLabelAsPlaceholder = true,
         cornerRadius = 15.dp,
         backgroundColor = MiuixTheme.colorScheme.background,
@@ -105,6 +127,7 @@ fun SearchField(searchText: TextFieldValue, focusRequester: FocusRequester, onVa
             )
             .focusRequester(focusRequester),
         singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = androidx.compose.ui.text.input.ImeAction.Search),
         label = "搜索或输入网址",
         trailingIcon = {
             if (searchText.text.isNotEmpty()) {
@@ -143,10 +166,10 @@ fun HistoryItem(historyList: List<String>, onSelected: (String) -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = item,
+                    maxLines = 1,
+                    text = if (item.length > 20) item.replace("\n", "").substring(0, 20) + "..." else item,
                     fontSize = 14.sp,
-
-                    )
+                )
             }
         }
     }

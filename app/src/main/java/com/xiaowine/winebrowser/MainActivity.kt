@@ -41,5 +41,7 @@ class MainActivity : ComponentActivity() {
         }
         MMKV.initialize(this)
         if (!BuildConfig.DEBUG) MMKV.setLogLevel(MMKVLogLevel.LevelNone);
+
     }
+
 }

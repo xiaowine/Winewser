@@ -52,13 +52,8 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.miuix.android)
     implementation(libs.mmkv)
-    implementation(libs.data.saver.core)
-    implementation(libs.data.saver.mmkv)
-//    testImplementation(libs.junit)
-//    androidTestImplementation(libs.androidx.junit)
-//    androidTestImplementation(libs.androidx.espresso.core)
-//    androidTestImplementation(platform(libs.androidx.compose.bom))
-//    androidTestImplementation(libs.androidx.ui.test.junit4)
+    implementation(libs.serialize) {
+        exclude("com.tencent", "mmkv-static")
+    }
     debugImplementation(libs.androidx.ui.tooling)
-//    debugImplementation(libs.androidx.ui.test.manifest)
 }

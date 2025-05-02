@@ -7,8 +7,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -25,15 +23,15 @@ import top.yukonga.miuix.kmp.theme.lightColorScheme
 fun App(startDestination: String = "home") {
     val navController = rememberNavController()
 
-    val currentRoute = remember {
-        mutableStateOf(navController.currentDestination?.route ?: "")
-    }
-
     val colors = if (isSystemInDarkTheme()) {
         darkColorScheme()
     } else {
         lightColorScheme()
     }
+
+    val isPreview = LocalInspectionMode.current
+    AppConfig.isPreview = isPreview
+
     MiuixTheme(
         colors = colors
     ) {

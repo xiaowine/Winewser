@@ -1,19 +1,24 @@
 [versions]
-agp = "8.9.0"
+agp = "8.9.2"
+dataSaverCore = "1.2.2"
 kotlin = "2.0.21"
-coreKtx = "1.15.0"
+coreKtx = "1.16.0"
 junit = "4.13.2"
-junitVersion = "1.1.5"
-espressoCore = "3.5.1"
+junitVersion = "1.2.1"
+espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.1"
-composeBom = "2024.09.00"
+composeBom = "2025.04.01"
 miuixAndroid = "0.4.2"
 androidx-navigation-compose = "2.8.9"
+mmkv = "2.2.1"
+serialize = "3.0.1"
 
 [libraries]
 
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+data-saver-core = { module = "io.github.FunnySaltyFish:data-saver-core", version.ref = "dataSaverCore" }
+data-saver-mmkv = { module = "io.github.FunnySaltyFish:data-saver-mmkv", version.ref = "dataSaverCore" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -31,6 +36,8 @@ androidx-foundation = { group = "androidx.compose.foundation", name = "foundatio
 androidx-animation = { group = "androidx.compose.animation", name = "animation" }
 miuix-android = { module = "top.yukonga.miuix.kmp:miuix-android", version.ref = "miuixAndroid" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "androidx-navigation-compose" }
+mmkv = { module = "com.tencent:mmkv", version.ref = "mmkv" }
+serialize = { module = "com.github.liangjingkanji:Serialize", version.ref = "serialize" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

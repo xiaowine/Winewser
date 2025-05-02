@@ -9,6 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -27,6 +28,7 @@ fun App(startDestination: String = "home") {
     val currentRoute = remember {
         mutableStateOf(navController.currentDestination?.route ?: "")
     }
+
     val colors = if (isSystemInDarkTheme()) {
         darkColorScheme()
     } else {

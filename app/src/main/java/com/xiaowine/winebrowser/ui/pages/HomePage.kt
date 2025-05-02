@@ -1,5 +1,6 @@
 package com.xiaowine.winebrowser.ui.pages
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -14,10 +15,13 @@ import androidx.compose.foundation.layout.captionBarPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -29,10 +33,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.funny.data_saver.core.rememberDataSaverState
 import com.xiaowine.winebrowser.App
 import com.xiaowine.winebrowser.BuildConfig
 import com.xiaowine.winebrowser.R
-import com.xiaowine.winebrowser.ui.FPSMonitor
+import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.FlowLayout
 import com.xiaowine.winebrowser.utils.Utils.showToast
 import top.yukonga.miuix.kmp.basic.Icon
@@ -42,6 +47,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.basic.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
+import java.util.Date
 
 @Composable
 @Preview(showSystemUi = true, device = "spec:parent=pixel_fold")
@@ -56,20 +62,63 @@ fun TestHomePage() {
     }
 }
 
+@SuppressLint("AutoboxingStateCreation")
 @Composable
 fun HomePage(
     navController: NavController = NavController(LocalContext.current),
 ) {
+    var booleanExample by rememberDataSaverState(key = "KEY_BOOLEAN_EXAMPLE", initialValue = "false")
+
     Surface {
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             BigTitle()
+            Text(
+                booleanExample,
+                modifier = Modifier.clickable {
+                    booleanExample = Date().toString()
+                }
+            )
             FakeSearchBar(navController)
             Shortcut()
         }
     }
+
+//    Scaffold(
+//        floatingToolbarPosition = ToolbarPosition.BottomCenter,
+//        content = {
+//            Column(
+//                modifier = Modifier
+//                    .fillMaxSize()
+//                    .navigationBarsPadding(),
+//                horizontalAlignment = Alignment.CenterHorizontally
+//            ) {
+//                BigTitle()
+//                FakeSearchBar(navController)
+//                Shortcut()
+//            }
+//        },
+//        bottomBar = {
+//            val items = listOf(
+//                NavigationItem("首页", MiuixIcons.Useful.NavigatorSwitch),
+//                NavigationItem("设置", MiuixIcons.Useful.Settings)
+//            )
+//            var selectedItem by remember { mutableIntStateOf(0) }
+//            NavigationBar(
+//                items = items,
+//                selected = selectedItem,
+//                onClick = { index ->
+//                    selectedItem = index
+//                },
+//            )
+//        }
+//    )
+
+
     AnimatedVisibility(
         visible = BuildConfig.DEBUG
     ) {
@@ -140,14 +189,16 @@ fun FakeSearchBar(
 
 @Composable
 fun Shortcut() {
-    val shortcuts = listOf("aaaaa", "bbbbbb", "ccccc", "ccccc", "bbbbbb", "ccccc", "bbbbbb", "ccccc")
+    val shortcuts = listOf("百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩", "百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩", "百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩", "百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩")
     val current = LocalContext.current
 
+    var scrollState = rememberScrollState()
     FlowLayout(
         modifier = Modifier
             .padding(horizontal = 24.dp)
             .padding(top = 24.dp)
-            .widthIn(max = 400.dp),
+            .widthIn(max = 400.dp)
+            .verticalScroll(scrollState),
         horizontalSpacing = 8.dp,
         verticalSpacing = 16.dp
     ) {

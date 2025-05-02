@@ -12,6 +12,8 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import com.tencent.mmkv.MMKV
+import com.tencent.mmkv.MMKVLogLevel
 
 
 class MainActivity : ComponentActivity() {
@@ -35,8 +37,9 @@ class MainActivity : ComponentActivity() {
 
                 onDispose {}
             }
-
             App()
         }
+        MMKV.initialize(this)
+        if (!BuildConfig.DEBUG) MMKV.setLogLevel(MMKVLogLevel.LevelNone);
     }
 }

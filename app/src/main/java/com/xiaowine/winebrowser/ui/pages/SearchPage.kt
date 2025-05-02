@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -44,7 +43,10 @@ import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
 @Composable
 @Preview(showSystemUi = true, device = "spec:parent=pixel_fold")
 @Preview(showSystemUi = true)
-@Preview(showSystemUi = true, uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES or android.content.res.Configuration.UI_MODE_TYPE_NORMAL)
+@Preview(
+    showSystemUi = true,
+    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES or android.content.res.Configuration.UI_MODE_TYPE_NORMAL
+)
 fun TestSearchPage() {
     MiuixTheme {
         App("search")
@@ -53,7 +55,7 @@ fun TestSearchPage() {
 
 @Composable
 fun SearchPage() {
-    val historyList = listOf("a", "b", "c", "d", "e" ,"c", "d", "e")
+    val historyList = listOf("a", "b", "c", "d", "e", "c", "d", "e")
     var searchText by remember { mutableStateOf(TextFieldValue("")) }
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
@@ -76,7 +78,7 @@ fun SearchPage() {
             SearchField(searchText, focusRequester) {
                 searchText = it
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             HistoryItem(historyList) {
                 searchText = TextFieldValue(it)
                 focusManager.clearFocus()
@@ -149,3 +151,4 @@ fun HistoryItem(historyList: List<String>, onSelected: (String) -> Unit) {
         }
     }
 }
+

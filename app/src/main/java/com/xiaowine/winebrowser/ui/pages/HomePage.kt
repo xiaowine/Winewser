@@ -3,13 +3,8 @@ package com.xiaowine.winebrowser.ui.pages
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
-import android.view.View
-import android.webkit.CookieManager
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceRequest
-import android.webkit.WebSettings
 import android.webkit.WebView
-import android.webkit.WebViewClient
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,9 +24,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -39,13 +35,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import com.xiaowine.winebrowser.App
 import com.xiaowine.winebrowser.AppConfig
@@ -58,6 +52,7 @@ import com.xiaowine.winebrowser.ui.MenuIcon
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.FlowLayout
 import com.xiaowine.winebrowser.ui.component.TabCountBadge
+import com.xiaowine.winebrowser.ui.component.Web
 import com.xiaowine.winebrowser.utils.Utils.rememberPreviewableState
 import com.xiaowine.winebrowser.utils.Utils.showToast
 import top.yukonga.miuix.kmp.basic.FloatingToolbar
@@ -91,51 +86,78 @@ fun HomePage(
 ) {
     var isInHtmlState by remember { mutableStateOf(true) }
     var titleState by remember { mutableStateOf("") }
+
     val historyList = rememberPreviewableState(
         realData = { AppConfig.title },
         previewData = "aaa",
         onSync = { AppConfig.title = it }
     )
+    var webViewUrlState = remember { mutableStateOf<String>("") }
+    val webViewState = remember { mutableStateOf<WebView?>(null) }
 
-    LocalContext.current
+    // 监听返回键，与WebView绑定
+    BackHandler(enabled = isInHtmlState) {
+        val webView = webViewState.value
+        if (webView?.canGoBack() == true) {
+            // WebView可以后退，执行后退
+            webView.goBack()
+        } else {
+            // WebView无法后退，退出应用或回到首页
+            isInHtmlState = false
+        }
+    }
+
+    val context = LocalContext.current
     Scaffold(
         topBar = {
             AnimatedVisibility(isInHtmlState) {
-                FakeSearchBar(navController, titleState)
+                HomeSearchBar(navController, titleState)
             }
         },
         content = { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                AnimatedVisibility(!isInHtmlState) {
-                    BigTitle()
+
+            AnimatedVisibility(!isInHtmlState) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    HomeBigTitle()
                     Text(
                         historyList.value,
                         modifier = Modifier.clickable {
                             historyList.value = Date().toString()
                         })
-                    FakeSearchBar(navController)
-                    Shortcut()
+                    HomeSearchBar(navController)
+                    HomeShortcut()
                 }
-                AnimatedVisibility(isInHtmlState) {
-                    Web {
-                        titleState = it
-                    }
+            }
+            AnimatedVisibility(isInHtmlState) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Web(
+                        onTitleChange = { titleState = it },
+                        onPageStarted = {
+                            webViewUrlState.value = it
+                        },
+                        webViewState = webViewState
+                    )
                 }
             }
         },
         bottomBar = {
             AnimatedVisibility(isInHtmlState) {
-                ButtonBar()
+                WebViewButtonBar(webViewState, webViewUrlState)
             }
         },
         floatingToolbar = {
             AnimatedVisibility(!isInHtmlState) {
-                Toolbar()
+                SearchToolbar()
             }
         },
         floatingToolbarPosition = ToolbarPosition.BottomEnd
@@ -153,78 +175,9 @@ fun HomePage(
     }
 }
 
-@SuppressLint("SetJavaScriptEnabled")
-@Composable
-fun Web(onTitleChange: (String) -> Unit) {
-    if (AppConfig.isPreview) return
-//    val url = "https://www.limestart.cn/"
-    val url = "https://www.douyin.com/?is_from_mobile_home=1/"
-//    val url = "https://m.bilibili.com/"
-    AndroidView(
-        modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(Color.Red)
-            .fillMaxSize(),
-        factory = { ctx ->
-            WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
-            WebView(ctx).apply {
-                settings.apply {
-// 允许 WebView 访问内容提供者
-                    allowContentAccess = true
-// 允许 WebView 访问文件
-                    allowFileAccess = true
-// 启用内置缩放控件
-                    builtInZoomControls = true
-// 启用数据库存储 API
-                    databaseEnabled = true
-// 隐藏缩放控件
-                    displayZoomControls = false
-// 允许混合内容（http/https 混用）
-                    mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
-// 启用 DOM 存储 API
-                    domStorageEnabled = true
-// 禁止 JS 自动打开新窗口
-                    javaScriptCanOpenWindowsAutomatically = false
-// 启用 JavaScript
-                    javaScriptEnabled = true
-// 加载页面时自适应屏幕
-                    loadWithOverviewMode = true
-// 媒体播放不需要用户手势
-                    mediaPlaybackRequiresUserGesture = false
-// 支持视口属性
-                    useWideViewPort = true
-// 支持缩放
-                    setSupportZoom(true)
-// 启用地理定位
-                    setGeolocationEnabled(true)
-// 支持多窗口
-                    setSupportMultipleWindows(true)
-                }
-
-                webChromeClient = object : WebChromeClient() {
-                    override fun onReceivedTitle(view: WebView?, title: String) {
-                        super.onReceivedTitle(view, title)
-                        onTitleChange(title)
-                    }
-                }
-                webViewClient = object : WebViewClient() {
-                    // 处理 Android 5.0+ (API 21+)
-                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                        val uri = request.url
-                        val scheme = uri.scheme // 获取 Scheme（如 http, https, bilibili, tel 等）
-                        return !(scheme == "http" || scheme == "https") // 只允许 http 和 https 链接
-                    }
-                }
-
-                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                loadUrl(url)
-            }
-        },
-    )
-}
 
 @Composable
-fun Toolbar() {
+fun SearchToolbar() {
     FloatingToolbar(
         modifier = Modifier
             .navigationBarsPadding()
@@ -256,7 +209,7 @@ fun Toolbar() {
 }
 
 @Composable
-fun ButtonBar() {
+fun WebViewButtonBar(webViewState: MutableState<WebView?>, webViewUrlState: MutableState<String>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -272,13 +225,32 @@ fun ButtonBar() {
             MenuIcon,
         )
 
-        for (i in 0 until 5) {
+        val canGoBack = remember { mutableStateOf(false) }
+        val canGoForward = remember { mutableStateOf(false) }
+        val webView = webViewState.value
 
-//        iconsList.forEach {
+        LaunchedEffect(webViewUrlState.value, webView) {
+            canGoBack.value = webView?.canGoBack() == true
+            canGoForward.value = webView?.canGoForward() == true
+        }
+
+
+        for (i in 0 until 5) {
             Box(
                 modifier = Modifier
                     .padding(vertical = 10.dp)
-                    .size(32.dp),
+                    .size(32.dp)
+                    .clickable(enabled = (i == 0 && canGoBack.value) || (i == 1 && canGoForward.value)) {
+                        if (i == 0) {
+                            webView?.goBack()
+                        } else if (i == 1) {
+                            webView?.goForward()
+                        }
+                        if (i <= 1) {
+                            canGoBack.value = webView?.canGoBack() == true
+                            canGoForward.value = webView?.canGoForward() == true
+                        }
+                    },
             ) {
                 if (i == 3) {
                     TabCountBadge(
@@ -289,21 +261,34 @@ fun ButtonBar() {
                     )
                 } else {
                     Icon(
-                        modifier = Modifier
-                            .fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         imageVector = iconsList[i]!!,
                         contentDescription = "Navigation action",
-                        tint = MiuixTheme.colorScheme.onBackground
+                        tint = when (i) {
+                            0 -> if (canGoBack.value) {
+                                MiuixTheme.colorScheme.onBackground
+                            } else {
+                                MiuixTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                            }
+
+                            1 -> if (canGoForward.value) {
+                                MiuixTheme.colorScheme.onBackground
+                            } else {
+                                MiuixTheme.colorScheme.onBackground.copy(alpha = 0.3f)
+                            }
+
+                            else -> MiuixTheme.colorScheme.onBackground
+                        }
                     )
                 }
             }
         }
-//    }
     }
 }
 
+
 @Composable
-fun BigTitle() {
+fun HomeBigTitle() {
     val context: Context = LocalContext.current
     Row(
         modifier = Modifier
@@ -318,7 +303,7 @@ fun BigTitle() {
 }
 
 @Composable
-fun FakeSearchBar(
+fun HomeSearchBar(
     navController: NavController,
     text: String = "搜索或输入网址"
 ) {
@@ -353,7 +338,12 @@ fun FakeSearchBar(
                     tint = MiuixTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = text, color = MiuixTheme.textStyles.main.color, modifier = Modifier.padding(start = 8.dp)
+                    text = text,
+                    color =
+                        MiuixTheme.textStyles.main.color,
+                    modifier =
+                        Modifier.padding(start = 8.dp),
+                    maxLines = 1
                 )
             }
         }
@@ -361,8 +351,7 @@ fun FakeSearchBar(
 }
 
 @Composable
-fun Shortcut() {
-//    val shortcuts = listOf("百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩", "百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩", "百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩", "百度", "哔哩哔哩", "知乎", "GitHub", "微博", "微信", "QQ", "淘宝", "京东", "小红书", "百度", "哔哩哔哩")
+fun HomeShortcut() {
     val shortcuts = listOf("百度", "哔哩哔哩", "知乎", "GitHub")
     val current = LocalContext.current
 
@@ -377,14 +366,14 @@ fun Shortcut() {
         verticalSpacing = 16.dp
     ) {
         shortcuts.forEach { item ->
-            ShortcutItem(
+            HomeShortcutItem(
                 title = item, onClick = { current.showToast(item) })
         }
     }
 }
 
 @Composable
-private fun ShortcutItem(
+private fun HomeShortcutItem(
     title: String, onClick: () -> Unit
 ) {
     Column(
@@ -408,4 +397,3 @@ private fun ShortcutItem(
         )
     }
 }
-

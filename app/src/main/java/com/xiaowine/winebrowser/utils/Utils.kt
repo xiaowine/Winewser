@@ -7,9 +7,17 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import com.xiaowine.winebrowser.AppConfig
+import com.xiaowine.winebrowser.MainActivity
 
 object Utils {
+    @Composable
+    fun ShowToast(message: String) {
+        val context = LocalContext.current
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
     fun Context.showToast(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }

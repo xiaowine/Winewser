@@ -37,12 +37,13 @@ fun App() {
     ) {
         NavHost(
             navController = navController,
-            startDestination = "main",
+            startDestination = "home",
         ) {
             pageDestinations(navController)
         }
     }
 }
+
 
 fun NavGraphBuilder.pageDestinations(
     navController: NavHostController
@@ -58,7 +59,10 @@ fun NavGraphBuilder.pageDestinations(
                     dampingRatio = Spring.DampingRatioLowBouncy,
                     stiffness = Spring.StiffnessLow
                 )
-            ) + fadeIn(animationSpec = spring())
+            ) + fadeIn(
+                animationSpec = spring(),
+                initialAlpha = 0.5f
+            )
         },
         exitTransition = {
             slideOutOfContainer(
@@ -67,7 +71,10 @@ fun NavGraphBuilder.pageDestinations(
                     dampingRatio = Spring.DampingRatioNoBouncy,
                     stiffness = Spring.StiffnessMediumLow
                 )
-            ) + fadeOut(animationSpec = spring())
+            ) + fadeOut(
+                animationSpec = spring(),
+                targetAlpha = 1f
+            )
         },
         popEnterTransition = {
             slideIntoContainer(
@@ -76,7 +83,10 @@ fun NavGraphBuilder.pageDestinations(
                     dampingRatio = Spring.DampingRatioLowBouncy,
                     stiffness = Spring.StiffnessLow
                 )
-            ) + fadeIn(animationSpec = spring())
+            ) + fadeIn(
+                animationSpec = spring(),
+                initialAlpha = 0.5f
+            )
         },
         popExitTransition = {
             slideOutOfContainer(
@@ -85,7 +95,10 @@ fun NavGraphBuilder.pageDestinations(
                     dampingRatio = Spring.DampingRatioNoBouncy,
                     stiffness = Spring.StiffnessMediumLow
                 )
-            ) + fadeOut(animationSpec = spring())
+            ) + fadeOut(
+                animationSpec = spring(),
+                targetAlpha = 1f
+            )
         }
     ) { SearchPage() }
 }

@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.xiaowine.winebrowser.App
 import com.xiaowine.winebrowser.BuildConfig
 import com.xiaowine.winebrowser.R
 import com.xiaowine.winebrowser.ui.FPSMonitor
@@ -37,9 +38,22 @@ import top.yukonga.miuix.kmp.icon.icons.basic.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
 
-
-
+@Composable
 @Preview(showSystemUi = true, device = "id:pixel_9_pro")
+fun TestHomePage() {
+    MiuixTheme {
+        App()
+    }
+}
+
+@Composable
+@Preview(showSystemUi = true, device = "id:pixel_9_pro", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES or android.content.res.Configuration.UI_MODE_TYPE_NORMAL)
+fun TestDarkHomePage() {
+    MiuixTheme {
+        App()
+    }
+}
+
 @Composable
 fun HomePage(
     navController: NavController = NavController(LocalContext.current),

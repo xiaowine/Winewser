@@ -3,6 +3,7 @@ package com.xiaowine.winebrowser.ui.pages
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -38,7 +39,7 @@ import top.yukonga.miuix.kmp.icon.icons.useful.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
 
-@Preview(showSystemUi = true, device = "id:pixel_9_pro")
+@Preview(showSystemUi = true, device = "id:pixel_9_pro", uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun SearchPage() {
     val historyList = listOf("赤霞111111aa珠", "梅洛", "霞多丽", "雷司令", "长相思")
@@ -72,10 +73,10 @@ fun SearchField(searchText: TextFieldValue, focusRequester: FocusRequester, onVa
         onValueChange = { onValueChange(it) },
         useLabelAsPlaceholder = true,
         cornerRadius = 15.dp,
+        backgroundColor = MiuixTheme.colorScheme.background,
         modifier = Modifier
             .fillMaxWidth()
             .height(55.dp)
-            .background(MiuixTheme.colorScheme.background)
             .border(
                 width = 2.dp,
                 color = MiuixTheme.colorScheme.onBackground,
@@ -83,7 +84,7 @@ fun SearchField(searchText: TextFieldValue, focusRequester: FocusRequester, onVa
             )
             .focusRequester(focusRequester),
         singleLine = true,
-        label = "搜索葡萄酒…",
+        label = "搜索或输入网址",
         trailingIcon = {
             if (searchText.text.isNotEmpty()) {
                 IconButton(
@@ -107,14 +108,14 @@ fun HistoryItem(historyList: List<String>, onSelected: (String) -> Unit) {
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         maxItemsInEachRow = 5,
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         historyList.forEach { item ->
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MiuixTheme.colorScheme.disabledPrimarySlider.copy(alpha = 0.7f))
+                    .background(MiuixTheme.colorScheme.dividerLine)
                     .clickable {
                         onSelected(item)
                     }
@@ -124,8 +125,8 @@ fun HistoryItem(historyList: List<String>, onSelected: (String) -> Unit) {
                 Text(
                     text = item,
                     fontSize = 14.sp,
-                    color = MiuixTheme.colorScheme.primary
-                )
+
+                    )
             }
         }
     }

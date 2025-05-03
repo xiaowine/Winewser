@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.captionBarPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -42,18 +44,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.xiaowine.winebrowser.App
 import com.xiaowine.winebrowser.AppConfig
+import com.xiaowine.winebrowser.BuildConfig
 import com.xiaowine.winebrowser.ui.AddIcon
 import com.xiaowine.winebrowser.ui.ArrowLeftIcon
 import com.xiaowine.winebrowser.ui.ArrowRightIcon
+import com.xiaowine.winebrowser.ui.LinkIcon
 import com.xiaowine.winebrowser.ui.MenuIcon
+import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.TabCountBadge
-import com.xiaowine.winebrowser.ui.component.Web
+import com.xiaowine.winebrowser.ui.component.WebViewLayout
 import com.xiaowine.winebrowser.utils.Utils.rememberPreviewableState
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -63,6 +69,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Delete
+import top.yukonga.miuix.kmp.icon.icons.useful.Like
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
 
@@ -79,22 +86,22 @@ fun TestBrowser() {
     }
 }
 
-
 @Composable
-fun Browser(
+fun BrowserPage(
     navController: NavController,
     urlToLoad: String? = "",
     isSearch: Boolean = false
 ) {
+    // 状态管理
     val focusManager = LocalFocusManager.current
-    val current = LocalContext.current
-
+    val context = LocalContext.current
     val historyList = rememberPreviewableState(
         realData = { AppConfig.searchHistory },
-        previewData = listOf("百度", "知乎", "B站"),
+        previewData = AppConfig.searchDefault,
         onSync = { AppConfig.searchHistory = it }
     )
 
+    // 组件状态
     var searchText by remember { mutableStateOf(TextFieldValue("")) }
     val focusRequester = remember { FocusRequester() }
     var titleState by remember { mutableStateOf("") }
@@ -102,10 +109,11 @@ fun Browser(
     var webViewUrlState = remember { mutableStateOf(urlToLoad ?: "") }
     val webViewState = remember { mutableStateOf<WebView?>(null) }
     var progress by remember { mutableIntStateOf(0) }
-
+    var isFieldFocused by remember { mutableStateOf(false) }
 
     // 监听WebView实例和URL变化，确保URL正确加载
     LaunchedEffect(webViewState.value, webViewUrlState.value) {
+        if (isSearchState) return@LaunchedEffect
         val webView = webViewState.value
         val url = webViewUrlState.value
 
@@ -114,45 +122,46 @@ fun Browser(
             webView.loadUrl(url)
         }
     }
+
+    // 更新搜索框显示的标题
     LaunchedEffect(titleState) {
         searchText = TextFieldValue(titleState)
     }
 
-// 执行搜索或导航的 Lambda 函数
+    LaunchedEffect(isSearchState) {
+        if (isSearchState) focusRequester.requestFocus()
+    }
+
+    // 执行搜索或导航的 Lambda 函数
     val performSearchOrNavigate: (String) -> Unit = { query ->
-        val trimmedQuery = query.trim() // 去除首尾空格
+        val trimmedQuery = query.trim()
         if (trimmedQuery.isNotEmpty()) {
-            // 判断输入是 URL 还是搜索词
+            // 确定最终加载的URL
             val url = if (Patterns.WEB_URL.matcher(trimmedQuery).matches() || trimmedQuery.contains("://")) {
-                // 如果是 URL 但不包含协议头，则添加 https://
                 if (!trimmedQuery.contains("://")) "https://$trimmedQuery" else trimmedQuery
             } else {
-                // 如果是搜索词，则使用 Bing 搜索引擎进行搜索
                 "https://www.bing.com/search?q=${Uri.encode(trimmedQuery)}"
             }
 
-            // 将查询添加到历史记录中，避免重复项，并保持最新的在最前面
+            // 更新搜索历史记录
             val currentList = historyList.value.toMutableList()
-            // 如果已存在，先移除旧的
             currentList.remove(trimmedQuery)
-            // 然后添加到开头
             currentList.add(0, trimmedQuery)
-            // 限制历史记录数量，保留最近的20条
+
             if (currentList.size > 20) {
                 historyList.value = currentList.take(20)
             } else {
                 historyList.value = currentList
             }
 
-            // 清除焦点，隐藏键盘
+            // 隐藏键盘，更新状态并加载URL
             focusManager.clearFocus()
-            // 更新状态并加载 URL
             isSearchState = false
-            // 更新URL状态以触发URL加载
             webViewUrlState.value = url
         }
     }
 
+    // 处理返回键逻辑
     BackHandler {
         if (isSearchState) {
             isSearchState = false
@@ -170,56 +179,83 @@ fun Browser(
 
     Scaffold(
         topBar = {
+            // 搜索栏
             SearchField(
                 modifier = Modifier
                     .statusBarsPadding()
                     .padding(horizontal = 16.dp)
+                    .padding(bottom = 6.dp)
                     .onFocusChanged { focusState ->
+                        isFieldFocused = focusState.isFocused
                         if (focusState.isFocused) {
                             isSearchState = true
                         }
                     },
                 searchText = searchText,
                 focusRequester = focusRequester,
-                onValueChange = { searchText = it }, // 更新搜索文本状态
-                onSearch = { performSearchOrNavigate(searchText.text) } // 执行搜索
+                onValueChange = { searchText = it },
+                onSearch = { performSearchOrNavigate(searchText.text) }
             )
-            if (progress != 100) {
+
+            // 加载进度条
+            if (progress != 100 && !isSearchState) {
                 LinearProgressIndicator(progress = progress / 100f)
             }
         },
         content = { paddingValues ->
-            Column(
+            // 添加一个全屏点击监听器作为最底层
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues).padding(bottom = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .clickable(
+                        interactionSource = null,
+                        indication = null
+                    ) {
+                        if (isFieldFocused) {
+                            focusManager.clearFocus()
+                        }
+                    }
             ) {
-                if (isSearchState) {
-                    HistoryItem(
-                        modifier = Modifier.fillMaxSize(),
-                        historyList = historyList.value,
-                        onSelected = { performSearchOrNavigate(it) } // 点击历史记录项执行搜索
-                    )
-                } else {
-                    Web(
+                // 内容区域
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                ) {
+
+                    // 搜索状态下显示历史记录，使用Box包裹以防止点击事件穿透
+                    if (isSearchState) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MiuixTheme.colorScheme.background)
+                        ) {
+                            SearchHistoryPanel(
+                                modifier = Modifier.fillMaxSize(),
+                                historyList = historyList.value,
+                                onSelected = { performSearchOrNavigate(it) }
+                            )
+                        }
+                    }
+                    // WebView - 始终渲染，但根据搜索状态控制可见性
+                    WebViewLayout(
                         modifier = Modifier.fillMaxSize(),
                         onTitleChange = { titleState = it },
                         onPageStarted = { loadedUrl ->
-                            // 当页面开始加载时更新URL状态，但不要再次触发加载
                             if (loadedUrl.isNotEmpty() && loadedUrl != webViewUrlState.value) {
                                 webViewUrlState.value = loadedUrl
                             }
                         },
-                        onProgressChanged = {
-                            progress = it
-                        },
-                        webViewState = webViewState
+                        onProgressChanged = { progress = it },
+                        webViewState = webViewState,
+                        isVisible = !isSearchState
                     )
+
                 }
             }
         },
         bottomBar = {
+            // 非搜索状态下显示底部导航栏
             if (!isSearchState) {
                 WebViewButtonBar(
                     navController,
@@ -229,12 +265,22 @@ fun Browser(
             }
         },
     )
-}
 
+    AnimatedVisibility(
+        visible = BuildConfig.DEBUG
+    ) {
+        FPSMonitor(
+            modifier = Modifier
+                .statusBarsPadding()
+                .captionBarPadding()
+                .padding(horizontal = 4.dp)
+        )
+    }
+}
 
 @Composable
 fun WebViewButtonBar(
-    navController1: NavController,
+    navController: NavController,
     webViewState: MutableState<WebView?>,
     webViewUrlState: MutableState<String>
 ) {
@@ -256,11 +302,12 @@ fun WebViewButtonBar(
         val canGoForward = remember { mutableStateOf(false) }
         val webView = webViewState.value
 
+        // 监听URL变化更新前进按钮状态
         LaunchedEffect(webViewUrlState.value, webView) {
             canGoForward.value = webView?.canGoForward() == true
         }
 
-
+        // 渲染底部按钮
         for (i in 0 until 5) {
             Box(
                 modifier = Modifier
@@ -271,7 +318,7 @@ fun WebViewButtonBar(
                             if (webView?.canGoBack() == true) {
                                 webView.goBack()
                             } else {
-                                navController1.navigate("home") {
+                                navController.navigate("home") {
                                     popUpTo(0) { inclusive = false }
                                 }
                             }
@@ -311,7 +358,6 @@ fun WebViewButtonBar(
     }
 }
 
-
 @Composable
 fun SearchField(
     modifier: Modifier = Modifier,
@@ -339,11 +385,9 @@ fun SearchField(
             )
             .focusRequester(focusRequester),
         singleLine = true,
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), // 设置键盘动作为搜索
-        keyboardActions = KeyboardActions(onSearch = { // 处理键盘搜索动作
-            onSearch()
-        }),
-        label = "搜索或输入网址", // 标签文本
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        keyboardActions = KeyboardActions(onSearch = { onSearch() }),
+        label = "搜索或输入网址",
         trailingIcon = {
             if (searchText.text.isNotEmpty()) {
                 IconButton(
@@ -361,7 +405,7 @@ fun SearchField(
 }
 
 @Composable
-fun HistoryItem(
+fun SearchHistoryPanel(
     modifier: Modifier = Modifier,
     historyList: List<String>,
     onSelected: (String) -> Unit
@@ -378,24 +422,34 @@ fun HistoryItem(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             historyList.forEach { item ->
-                Box(
+                val cleanItem = item.replace("\n", "")
+                val isLink = Patterns.WEB_URL.matcher(cleanItem).matches() || cleanItem.contains("://")
+                Row(
                     modifier = Modifier
                         .clip(SmoothRoundedCornerShape(12.dp))
                         .background(MiuixTheme.colorScheme.dividerLine)
                         .clickable { onSelected(item) }
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    contentAlignment = Alignment.Center
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    val cleanItem = item.replace("\n", "")
+                    if (isLink) {
+                        Icon(
+                            modifier = Modifier
+                                .rotate(90f)
+                                .size(20.dp),
+                            imageVector = LinkIcon,
+                            contentDescription = "链接"
+                        )
+                    }
                     Text(
                         maxLines = 1,
-                        // 限制最大长度，超出部分显示省略号
-                        text = if (cleanItem.length > 20) "${cleanItem.take(20)}..." else cleanItem,
+                        text = cleanItem,
                         fontSize = 14.sp,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
         }
     }
 }
-

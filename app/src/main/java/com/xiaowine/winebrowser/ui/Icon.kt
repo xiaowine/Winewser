@@ -122,3 +122,47 @@ val MenuIcon: ImageVector
         }.build()
         return _menu!!
     }
+
+private var _link: ImageVector? = null
+val LinkIcon: ImageVector
+    get() {
+        if (_link != null) return _link!!
+        _link = ImageVector.Builder(
+            name = "Link45",
+            defaultWidth = 24.0.dp,
+            defaultHeight = 24.0.dp,
+            viewportWidth = 24.0f,
+            viewportHeight = 24.0f
+        ).apply {
+            path(
+                fill = null,
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 2.0f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round,
+                pathFillType = PathFillType.EvenOdd
+            ) {
+                // 创建一个45度倾斜的链接图标
+                // 第一个环 - 左下角
+                moveTo(8.0f, 14.0f)
+                arcTo(4.0f, 4.0f, 0.0f, false, false, 10.0f, 16.0f)
+                lineTo(13.0f, 16.0f)
+                arcTo(4.0f, 4.0f, 0.0f, true, false, 16.0f, 10.0f)
+                lineTo(13.0f, 10.0f)
+                arcTo(4.0f, 4.0f, 0.0f, false, false, 11.0f, 12.0f)
+
+                // 第二个环 - 右上角
+                moveTo(16.0f, 10.0f)
+                arcTo(4.0f, 4.0f, 0.0f, false, false, 14.0f, 8.0f)
+                lineTo(11.0f, 8.0f)
+                arcTo(4.0f, 4.0f, 0.0f, true, false, 8.0f, 14.0f)
+                lineTo(11.0f, 14.0f)
+                arcTo(4.0f, 4.0f, 0.0f, false, false, 13.0f, 12.0f)
+
+                // 中间的连接线
+                moveTo(10.0f, 10.0f)
+                lineTo(14.0f, 14.0f)
+            }
+        }.build()
+        return _link!!
+    }

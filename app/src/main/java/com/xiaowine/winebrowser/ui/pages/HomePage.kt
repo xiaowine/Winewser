@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.captionBarPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,18 +42,17 @@ import com.xiaowine.winebrowser.ui.AddIcon
 import com.xiaowine.winebrowser.ui.MenuIcon
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.FlowLayout
-import com.xiaowine.winebrowser.ui.component.HomeSearchBar
 import com.xiaowine.winebrowser.utils.Utils.base64ToPainter
 import com.xiaowine.winebrowser.utils.Utils.rememberPreviewableState
-import com.xiaowine.winebrowser.utils.Utils.showToast
 import top.yukonga.miuix.kmp.basic.FloatingToolbar
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.ToolbarPosition
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.icons.basic.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
-import java.util.Date
 
 @Composable
 @Preview(showSystemUi = true, device = "spec:parent=pixel_fold")
@@ -246,5 +248,58 @@ private fun HomeShortcutItem(
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 8.dp)
         )
+    }
+}
+
+
+@Composable
+fun HomeSearchBar(
+    navController: NavController,
+    text: String = "搜索或输入网址"
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(top = 50.dp)
+                .padding(horizontal = 24.dp)
+                .padding(bottom = 5.dp)
+                .widthIn(max = 400.dp)
+                .fillMaxWidth()
+                .height(55.dp)
+                .background(MiuixTheme.colorScheme.background)
+                .border(
+                    width = 2.dp,
+                    color = MiuixTheme.colorScheme.onBackground,
+                    shape = SmoothRoundedCornerShape(15.dp)
+                )
+                .clickable(
+                    interactionSource = null,
+                    indication = null,
+                ) {
+                    navController.navigate("browser?url=\"\"&isSearch=true")
+                },
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Basic.Search,
+                    contentDescription = "Search",
+                    tint = MiuixTheme.colorScheme.onBackground,
+                )
+                Text(
+                    text = text,
+                    color = MiuixTheme.textStyles.main.color,
+                    modifier = Modifier.padding(start = 8.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis // 超出部分显示省略号
+                )
+            }
+        }
     }
 }

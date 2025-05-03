@@ -7,5 +7,6 @@ import com.drake.serialize.serialize.serial
 object AppConfig {
     var isPreview: Boolean = true
     var title by serial("Wine Browser", "title")
-    var searchHistory: List<String> by serial(arrayListOf(), "search_history")
+    val searchDefault = listOf("百度", "知乎", "B站", "https://www.limestart.cn/")
+    var searchHistory: List<String> by serial(searchDefault, "search_history")
 }

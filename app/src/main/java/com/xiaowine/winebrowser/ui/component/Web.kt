@@ -7,7 +7,6 @@ import android.webkit.CookieManager
 import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
@@ -21,16 +20,15 @@ import com.xiaowine.winebrowser.webview.WinewserWebViewClient
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun Web(
-    initUrl: String = "https://www.limestart.cn/",
+    modifier: Modifier = Modifier,
     onTitleChange: (String) -> Unit,
     onProgressChanged: (Int) -> Unit,
     onPageStarted: (String) -> Unit,
-    webViewState: MutableState<WebView?> // 新增参数
+    webViewState: MutableState<WebView?>
 ) {
     if (AppConfig.isPreview) return
     AndroidView(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = modifier
             .background(Color.Transparent),
         factory = { ctx ->
             WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
@@ -68,7 +66,6 @@ fun Web(
                 webChromeClient = WinewserWebChromeClient(onTitleChange, onProgressChanged)
                 webViewClient = WinewserWebViewClient(onPageStarted)
                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
-                loadUrl(initUrl)
                 webViewState.value = this // 绑定WebView实例
             }
         },

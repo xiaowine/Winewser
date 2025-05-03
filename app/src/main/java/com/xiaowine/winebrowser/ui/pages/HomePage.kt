@@ -202,7 +202,7 @@ fun HomeShortcut(
             HomeShortcutItem(
                 itemData = shortcutItem,
                 onClick = {
-                    navController.navigate("web?url=${shortcutItem.url}") {
+                    navController.navigate("browser?url=${shortcutItem.url}") {
                         launchSingleTop = true
                     }
                 })

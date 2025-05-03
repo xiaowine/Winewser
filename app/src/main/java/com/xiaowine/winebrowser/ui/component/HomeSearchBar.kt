@@ -53,7 +53,7 @@ fun HomeSearchBar(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null, // 禁用点击效果
                 ) {
-                    navController.navigate("search")
+                    navController.navigate("browser?url=\"\"&isSearch=true")
                 },
             contentAlignment = Alignment.CenterStart
         ) {

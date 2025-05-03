@@ -29,7 +29,7 @@ fun FPSMonitor(modifier: Modifier = Modifier) {
     var frameCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
-        while(true) {
+        while (true) {
             delay(1000)
             fps = frameCount
             frameCount = 0
@@ -38,7 +38,6 @@ fun FPSMonitor(modifier: Modifier = Modifier) {
 
     // Count frames
     val currentTime = System.nanoTime()
-    val delta = (currentTime - lastTime) / 1_000_000_000.0
     lastTime = currentTime
     frameCount++
 

@@ -3,6 +3,7 @@ package com.xiaowine.winebrowser.webview
 import android.app.AlertDialog
 import android.content.Intent
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.xiaowine.winebrowser.utils.Utils.showToast
@@ -54,4 +55,9 @@ class WinewserWebViewClient(val onPageStarted: (String) -> Unit) : WebViewClient
             onPageStarted(url)
         }
     }
+    // TODO: 可以在这里屏蔽包含特定域名的广告请求？
+    override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
+        return super.shouldInterceptRequest(view, request)
+    }
+
 }

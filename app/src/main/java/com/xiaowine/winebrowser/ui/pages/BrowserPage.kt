@@ -93,7 +93,7 @@ fun TestBrowser() {
 @Composable
 fun BrowserPage(
     navController: NavController,
-    urlToLoad: String? = "",
+    urlToLoad: String?,
     isSearch: Boolean = false
 ) {
     // 状态管理
@@ -104,7 +104,6 @@ fun BrowserPage(
         previewData = AppConfig.searchDefault,
         onSync = { AppConfig.searchHistory = it }
     )
-
     // 组件状态
     var searchText = remember { mutableStateOf(TextFieldValue("")) }
     val focusRequester = remember { FocusRequester() }
@@ -124,6 +123,7 @@ fun BrowserPage(
         if (webView != null && url.isNotEmpty()) {
             Log.d("Browser", "Loading URL: $url")
             webView.loadUrl(url)
+            titleState.value = "正在加载中..."
         }
     }
 

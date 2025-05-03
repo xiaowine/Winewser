@@ -280,7 +280,7 @@ fun HomeSearchBar(
                     interactionSource = null,
                     indication = null,
                 ) {
-                    navController.navigate("browser?url=\"\"&isSearch=true")
+                    navController.navigate("browser?url=&isSearch=true")
                 },
             contentAlignment = Alignment.CenterStart
         ) {

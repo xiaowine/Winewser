@@ -66,6 +66,7 @@ fun NavGraphBuilder.pageDestinations(
         )
     ) { backStackEntry ->
         val url = backStackEntry.arguments?.getString("url")
+        println(url)
         val isSearch = backStackEntry.arguments?.getBoolean("isSearch")!!
         BrowserPage(
             navController = navController,

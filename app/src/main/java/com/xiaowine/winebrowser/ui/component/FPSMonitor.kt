@@ -9,7 +9,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -20,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Text
-import kotlin.math.roundToInt
 
 @Composable
 fun FPSMonitor(modifier: Modifier = Modifier) {
@@ -29,7 +27,7 @@ fun FPSMonitor(modifier: Modifier = Modifier) {
     var frameCount by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
-        while(true) {
+        while (true) {
             delay(1000)
             fps = frameCount
             frameCount = 0
@@ -38,7 +36,6 @@ fun FPSMonitor(modifier: Modifier = Modifier) {
 
     // Count frames
     val currentTime = System.nanoTime()
-    val delta = (currentTime - lastTime) / 1_000_000_000.0
     lastTime = currentTime
     frameCount++
 

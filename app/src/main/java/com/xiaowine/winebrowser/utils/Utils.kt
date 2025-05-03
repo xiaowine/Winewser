@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
-import com.xiaowine.winebrowser.AppConfig
+import com.xiaowine.winebrowser.config.AppConfig
 
 object Utils {
 

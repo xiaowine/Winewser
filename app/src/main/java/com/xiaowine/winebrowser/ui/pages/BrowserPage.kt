@@ -1,11 +1,14 @@
 package com.xiaowine.winebrowser.ui.pages
 
+import androidx.compose.ui.graphics.asImageBitmap
+import android.graphics.Bitmap
 import android.net.Uri
 import android.util.Log
 import android.util.Patterns
 import android.webkit.WebView
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,6 +43,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
@@ -50,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.xiaowine.winebrowser.App
-import com.xiaowine.winebrowser.AppConfig
+import com.xiaowine.winebrowser.config.AppConfig
 import com.xiaowine.winebrowser.BuildConfig
 import com.xiaowine.winebrowser.ui.AddIcon
 import com.xiaowine.winebrowser.ui.ArrowLeftIcon
@@ -58,7 +62,7 @@ import com.xiaowine.winebrowser.ui.ArrowRightIcon
 import com.xiaowine.winebrowser.ui.LinkIcon
 import com.xiaowine.winebrowser.ui.MenuIcon
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
-import com.xiaowine.winebrowser.ui.component.TabCountBadge
+import com.xiaowine.winebrowser.ui.component.BrowserTabCountBadge
 import com.xiaowine.winebrowser.ui.component.WebViewLayout
 import com.xiaowine.winebrowser.utils.Utils.copyToClipboard
 import com.xiaowine.winebrowser.utils.Utils.rememberPreviewableState
@@ -73,6 +77,8 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Copy
 import top.yukonga.miuix.kmp.icon.icons.useful.Edit
+import top.yukonga.miuix.kmp.icon.icons.useful.NavigatorSwitch
+import top.yukonga.miuix.kmp.icon.icons.useful.Refresh
 import top.yukonga.miuix.kmp.icon.icons.useful.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
@@ -104,40 +110,41 @@ fun BrowserPage(
         previewData = AppConfig.searchDefault,
         onSync = { AppConfig.searchHistory = it }
     )
-    // 组件状态
+    var siteTitleState = remember { mutableStateOf("") }
+    var siteIconState = remember { mutableStateOf<Bitmap?>(null) }
+
     var searchText = remember { mutableStateOf(TextFieldValue("")) }
     val focusRequester = remember { FocusRequester() }
-    var titleState = remember { mutableStateOf("") }
-    var isSearchState by remember { mutableStateOf(isSearch) }
+    var isSearchState = remember { mutableStateOf(isSearch) }
     var webViewUrlState = remember { mutableStateOf(urlToLoad ?: "") }
     val webViewState = remember { mutableStateOf<WebView?>(null) }
     var progress by remember { mutableIntStateOf(0) }
     var isFieldFocused by remember { mutableStateOf(false) }
 
     // 监听WebView实例和URL变化，确保URL正确加载
-    LaunchedEffect(webViewState.value, webViewUrlState.value) {
-        if (isSearchState) return@LaunchedEffect
+    LaunchedEffect(webViewUrlState.value) {
+        if (isSearchState.value) return@LaunchedEffect
         val webView = webViewState.value
         val url = webViewUrlState.value
 
         if (webView != null && url.isNotEmpty()) {
             Log.d("Browser", "Loading URL: $url")
             webView.loadUrl(url)
-            titleState.value = "正在加载中..."
+            siteTitleState.value = "正在加载中..."
         }
     }
 
     // 更新搜索框显示的标题
-    LaunchedEffect(titleState.value) {
-        searchText.value = TextFieldValue(titleState.value)
+    LaunchedEffect(siteTitleState.value) {
+        searchText.value = TextFieldValue(siteTitleState.value)
     }
 
     LaunchedEffect(isSearchState) {
-        if (isSearchState) {
+        if (isSearchState.value) {
             focusRequester.requestFocus()
             searchText.value = TextFieldValue("")
         } else {
-            searchText.value = TextFieldValue(titleState.value)
+            searchText.value = TextFieldValue(siteTitleState.value)
         }
     }
 
@@ -165,7 +172,7 @@ fun BrowserPage(
 
             // 隐藏键盘，更新状态并加载URL
             focusManager.clearFocus()
-            isSearchState = false
+            isSearchState.value = false
             webViewUrlState.value = url
         }
     }
@@ -175,8 +182,14 @@ fun BrowserPage(
         if (isFieldFocused) {
             focusManager.clearFocus()
         }
-        if (isSearchState) {
-            isSearchState = false
+        if (siteTitleState.value.isEmpty()) {
+            navController.navigate("home") {
+                popUpTo(0) { inclusive = false }
+            }
+            return@BackHandler
+        }
+        if (isSearchState.value) {
+            isSearchState.value = false
         } else {
             val webView = webViewState.value
             if (webView?.canGoBack() == true) {
@@ -187,17 +200,13 @@ fun BrowserPage(
                 }
             }
         }
-        if (titleState.value.isEmpty()) {
-            navController.navigate("home") {
-                popUpTo(0) { inclusive = false }
-            }
-        }
+
     }
 
     Scaffold(
         topBar = {
             // 搜索栏
-            SearchField(
+            BrowserSearchField(
                 modifier = Modifier
                     .statusBarsPadding()
                     .padding(horizontal = 16.dp)
@@ -205,21 +214,22 @@ fun BrowserPage(
                     .onFocusChanged { focusState ->
                         isFieldFocused = focusState.isFocused
                         if (focusState.isFocused) {
-                            isSearchState = true
+                            isSearchState.value = true
                         }
                     },
                 searchText = searchText.value,
                 focusRequester = focusRequester,
                 onValueChange = {
-                    if (!isSearchState) {
-                        searchText.value = it
-                    }
+                    searchText.value = it
                 },
                 onSearch = { performSearchOrNavigate(searchText.value.text) },
+                webViewState = webViewState,
+                isSearchState = isSearchState,
+                siteIconState = siteIconState
             )
 
             // 加载进度条
-            if (progress != 100 && !isSearchState) {
+            if (progress != 100 && !isSearchState.value) {
                 LinearProgressIndicator(progress = progress / 100f)
             }
         },
@@ -245,7 +255,7 @@ fun BrowserPage(
                 ) {
 
                     // 搜索状态下显示历史记录，使用Box包裹以防止点击事件穿透
-                    if (isSearchState) {
+                    if (isSearchState.value) {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -254,18 +264,18 @@ fun BrowserPage(
                             Column(
                                 modifier = Modifier.fillMaxWidth()
                             ) {
-                                if (titleState.value.isNotEmpty()) {
-                                    NowSiteInfo(
+                                if (siteTitleState.value.isNotEmpty()) {
+                                    BrowserNowSiteInfo(
                                         modifier = Modifier
                                             .padding(horizontal = 16.dp)
                                             .padding(top = 16.dp)
                                             .padding(bottom = 10.dp),
                                         urlState = webViewUrlState,
-                                        titleState = titleState,
+                                        titleState = siteTitleState,
                                         searchText = searchText
                                     )
                                 }
-                                SearchHistoryPanel(
+                                BrowserSearchHistoryPanel(
                                     modifier = Modifier.fillMaxSize(),
                                     historyList = historyList.value,
                                     onSelected = { performSearchOrNavigate(it) }
@@ -273,10 +283,12 @@ fun BrowserPage(
                             }
                         }
                     }
-                    // WebView - 始终渲染，但根据搜索状态控制可见性
                     WebViewLayout(
                         modifier = Modifier.fillMaxSize(),
-                        onTitleChange = { titleState.value = it },
+                        onTitleChange = { siteTitleState.value = it },
+                        onIconChange = {
+                            siteIconState.value = it
+                        },
                         onPageStarted = { loadedUrl ->
                             if (loadedUrl.isNotEmpty() && loadedUrl != webViewUrlState.value) {
                                 webViewUrlState.value = loadedUrl
@@ -284,7 +296,7 @@ fun BrowserPage(
                         },
                         onProgressChanged = { progress = it },
                         webViewState = webViewState,
-                        isVisible = !isSearchState
+                        isVisible = !isSearchState.value
                     )
 
                 }
@@ -292,8 +304,8 @@ fun BrowserPage(
         },
         bottomBar = {
             // 非搜索状态下显示底部导航栏
-            if (!isSearchState) {
-                WebViewButtonBar(
+            if (!isSearchState.value) {
+                BrowserButtonBar(
                     navController,
                     webViewState,
                     webViewUrlState
@@ -315,7 +327,7 @@ fun BrowserPage(
 }
 
 @Composable
-fun WebViewButtonBar(
+fun BrowserButtonBar(
     navController: NavController,
     webViewState: MutableState<WebView?>,
     webViewUrlState: MutableState<String>
@@ -367,7 +379,7 @@ fun WebViewButtonBar(
                     },
             ) {
                 if (i == 3) {
-                    TabCountBadge(
+                    BrowserTabCountBadge(
                         count = 1,
                         modifier = Modifier
                             .size(32.dp)
@@ -395,12 +407,15 @@ fun WebViewButtonBar(
 }
 
 @Composable
-fun SearchField(
+fun BrowserSearchField(
     modifier: Modifier = Modifier,
     searchText: TextFieldValue,
     focusRequester: FocusRequester,
     onValueChange: (TextFieldValue) -> Unit,
-    onSearch: () -> Unit
+    onSearch: () -> Unit,
+    webViewState: MutableState<WebView?>,
+    isSearchState: MutableState<Boolean>,
+    siteIconState: MutableState<Bitmap?>,
 ) {
     TextField(
         value = searchText,
@@ -422,8 +437,36 @@ fun SearchField(
             .focusRequester(focusRequester),
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = { if (searchText.text.trim().isEmpty()) onSearch() }),
+        keyboardActions = KeyboardActions(onSearch = {
+            if (searchText.text.trim().isNotEmpty()) {
+                onSearch()
+            }
+        }),
         label = "搜索或输入网址",
+        leadingIcon = {
+            val modifier = Modifier
+                .padding(horizontal = 5.dp)
+                .padding(start = 5.dp)
+                .size(24.dp)
+            if (siteIconState.value != null) {
+                Image(
+                    modifier = modifier,
+                    painter = BitmapPainter(siteIconState.value!!.asImageBitmap()),
+                    contentDescription = null,
+                    )
+            } else {
+                Icon(
+                    modifier = modifier
+                        .clickable(
+                            indication = null,
+                            interactionSource = null
+                        ) {},
+                    imageVector = MiuixIcons.Useful.NavigatorSwitch,
+                    contentDescription = "Search",
+                    tint = IconDefaults.DefaultTint()
+                )
+            }
+        },
         trailingIcon = {
             Icon(
                 modifier = Modifier
@@ -432,9 +475,13 @@ fun SearchField(
                         indication = null,
                         interactionSource = null
                     ) {
-                        onSearch()
+                        if (isSearchState.value) {
+                            onSearch()
+                        } else {
+                            webViewState.value!!.reload()
+                        }
                     },
-                imageVector = MiuixIcons.Useful.Search,
+                imageVector = if (isSearchState.value) MiuixIcons.Useful.Search else MiuixIcons.Useful.Refresh,
                 contentDescription = "Search",
                 tint = if (searchText.text.trim().isEmpty()) {
                     IconDefaults.DefaultTint().copy(alpha = 0.3f)
@@ -447,7 +494,7 @@ fun SearchField(
 }
 
 @Composable
-fun NowSiteInfo(
+fun BrowserNowSiteInfo(
     modifier: Modifier = Modifier,
     urlState: MutableState<String>,
     titleState: MutableState<String>,
@@ -532,7 +579,7 @@ fun NowSiteInfo(
 }
 
 @Composable
-fun SearchHistoryPanel(
+fun BrowserSearchHistoryPanel(
     modifier: Modifier = Modifier,
     historyList: List<String>,
     onSelected: (String) -> Unit

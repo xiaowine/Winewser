@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.xiaowine.winebrowser.config.AppConfig
 import com.xiaowine.winebrowser.ui.pages.BrowserPage
 import com.xiaowine.winebrowser.ui.pages.HomePage
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -66,7 +67,6 @@ fun NavGraphBuilder.pageDestinations(
         )
     ) { backStackEntry ->
         val url = backStackEntry.arguments?.getString("url")
-        println(url)
         val isSearch = backStackEntry.arguments?.getBoolean("isSearch")!!
         BrowserPage(
             navController = navController,

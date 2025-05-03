@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.xiaowine.winebrowser.App
-import com.xiaowine.winebrowser.AppConfig
+import com.xiaowine.winebrowser.config.AppConfig
 import com.xiaowine.winebrowser.BuildConfig
 import com.xiaowine.winebrowser.R
 import com.xiaowine.winebrowser.data.HomeShortcutItemData

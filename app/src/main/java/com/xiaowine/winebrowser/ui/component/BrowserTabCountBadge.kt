@@ -26,7 +26,7 @@ import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
  * @param backgroundColor 背景颜色(默认透明)
  */
 @Composable
-fun TabCountBadge(
+fun BrowserTabCountBadge(
     count: Int,
     modifier: Modifier = Modifier,
     textColor: Color = MiuixTheme.colorScheme.onBackground,

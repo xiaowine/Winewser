@@ -21,6 +21,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "酒域"
+rootProject.name = "Winewser"
 include(":app")
  

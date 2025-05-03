@@ -1,8 +1,12 @@
+import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
+val localProperties = org.jetbrains.kotlin.konan.properties.Properties()
+if (rootProject.file("local.properties").canRead()) localProperties.load(rootProject.file("local.properties").inputStream())
 
 android {
     namespace = "com.xiaowine.winebrowser"
@@ -18,23 +22,42 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    val config = localProperties.getProperty("androidStoreFile")?.let {
+        signingConfigs.create("config") {
+            storeFile = file(it)
+            storePassword = localProperties.getProperty("androidStorePassword")
+            keyAlias = localProperties.getProperty("androidKeyAlias")
+            keyPassword = localProperties.getProperty("androidKeyPassword")
+            enableV3Signing = true
+            enableV4Signing = true
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+    buildTypes {
+        all {
+            signingConfig = config ?: signingConfigs["debug"]
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            vcsInfo.include = false
+            setProguardFiles(listOf(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"))
+        }
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    packaging {
+        resources {
+            excludes += "**"
+        }
+    }
+    applicationVariants.all {
+        outputs.all {
+            (this as BaseVariantOutputImpl).outputFileName = "${rootProject.name}-$versionName($versionCode)-$name.apk"
+        }
     }
     buildFeatures {
         buildConfig = true
         compose = true
     }
+    kotlin.jvmToolchain(21)
 }
 
 dependencies {

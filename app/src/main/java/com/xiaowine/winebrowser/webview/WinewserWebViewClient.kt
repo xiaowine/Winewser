@@ -6,9 +6,12 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.xiaowine.winebrowser.utils.Utils.showToast
 
-class WinewserWebViewClient(val onPageStarted: (String) -> Unit) : WebViewClient() {
+class WinewserWebViewClient(
+    val onPageStarted: (String) -> Unit
+) : WebViewClient() {
+    var mainUrl = ""
+
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
         val uri = request.url
         val scheme = uri.scheme // 获取 Scheme（如 http, https, bilibili, tel 等）
@@ -34,16 +37,13 @@ class WinewserWebViewClient(val onPageStarted: (String) -> Unit) : WebViewClient
                     }
                     .setNegativeButton("取消", null)
                     .show()
-//                                val chooser = Intent.createChooser(intent, "选择应用打开")
-//                                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
-//                                view.context.startActivity(chooser)
                 return true
             } else {
-                view.context.showToast("没有可用的应用来打开此链接")
+//                view.context.showToast("没有可用的应用来打开此链接")
                 return true
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+//            e.printStackTrace()
             return true
         }
     }
@@ -52,12 +52,13 @@ class WinewserWebViewClient(val onPageStarted: (String) -> Unit) : WebViewClient
     override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
         super.doUpdateVisitedHistory(view, url, isReload)
         if (!isReload && url != null) {
+            mainUrl = url
             onPageStarted(url)
         }
     }
+
     // TODO: 可以在这里屏蔽包含特定域名的广告请求？
     override fun shouldInterceptRequest(view: WebView?, request: WebResourceRequest?): WebResourceResponse? {
         return super.shouldInterceptRequest(view, request)
     }
-
 }

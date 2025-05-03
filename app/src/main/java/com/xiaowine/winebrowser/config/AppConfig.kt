@@ -1,4 +1,4 @@
-package com.xiaowine.winebrowser
+package com.xiaowine.winebrowser.config
 
 import com.drake.serialize.serialize.annotation.SerializeConfig
 import com.drake.serialize.serialize.serial

@@ -60,16 +60,20 @@ import com.xiaowine.winebrowser.ui.MenuIcon
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.TabCountBadge
 import com.xiaowine.winebrowser.ui.component.WebViewLayout
+import com.xiaowine.winebrowser.utils.Utils.copyToClipboard
 import com.xiaowine.winebrowser.utils.Utils.rememberPreviewableState
+import com.xiaowine.winebrowser.utils.Utils.showToast
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.IconDefaults
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.icons.useful.Delete
-import top.yukonga.miuix.kmp.icon.icons.useful.Like
+import top.yukonga.miuix.kmp.icon.icons.useful.Copy
+import top.yukonga.miuix.kmp.icon.icons.useful.Edit
+import top.yukonga.miuix.kmp.icon.icons.useful.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
 
@@ -102,9 +106,9 @@ fun BrowserPage(
     )
 
     // 组件状态
-    var searchText by remember { mutableStateOf(TextFieldValue("")) }
+    var searchText = remember { mutableStateOf(TextFieldValue("")) }
     val focusRequester = remember { FocusRequester() }
-    var titleState by remember { mutableStateOf("") }
+    var titleState = remember { mutableStateOf("") }
     var isSearchState by remember { mutableStateOf(isSearch) }
     var webViewUrlState = remember { mutableStateOf(urlToLoad ?: "") }
     val webViewState = remember { mutableStateOf<WebView?>(null) }
@@ -124,12 +128,17 @@ fun BrowserPage(
     }
 
     // 更新搜索框显示的标题
-    LaunchedEffect(titleState) {
-        searchText = TextFieldValue(titleState)
+    LaunchedEffect(titleState.value) {
+        searchText.value = TextFieldValue(titleState.value)
     }
 
     LaunchedEffect(isSearchState) {
-        if (isSearchState) focusRequester.requestFocus()
+        if (isSearchState) {
+            focusRequester.requestFocus()
+            searchText.value = TextFieldValue("")
+        } else {
+            searchText.value = TextFieldValue(titleState.value)
+        }
     }
 
     // 执行搜索或导航的 Lambda 函数
@@ -163,6 +172,9 @@ fun BrowserPage(
 
     // 处理返回键逻辑
     BackHandler {
+        if (isFieldFocused) {
+            focusManager.clearFocus()
+        }
         if (isSearchState) {
             isSearchState = false
         } else {
@@ -173,6 +185,11 @@ fun BrowserPage(
                 navController.navigate("home") {
                     popUpTo(0) { inclusive = false }
                 }
+            }
+        }
+        if (titleState.value.isEmpty()) {
+            navController.navigate("home") {
+                popUpTo(0) { inclusive = false }
             }
         }
     }
@@ -191,10 +208,14 @@ fun BrowserPage(
                             isSearchState = true
                         }
                     },
-                searchText = searchText,
+                searchText = searchText.value,
                 focusRequester = focusRequester,
-                onValueChange = { searchText = it },
-                onSearch = { performSearchOrNavigate(searchText.text) }
+                onValueChange = {
+                    if (!isSearchState) {
+                        searchText.value = it
+                    }
+                },
+                onSearch = { performSearchOrNavigate(searchText.value.text) },
             )
 
             // 加载进度条
@@ -230,17 +251,32 @@ fun BrowserPage(
                                 .fillMaxSize()
                                 .background(MiuixTheme.colorScheme.background)
                         ) {
-                            SearchHistoryPanel(
-                                modifier = Modifier.fillMaxSize(),
-                                historyList = historyList.value,
-                                onSelected = { performSearchOrNavigate(it) }
-                            )
+                            Column(
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                if (titleState.value.isNotEmpty()) {
+                                    NowSiteInfo(
+                                        modifier = Modifier
+                                            .padding(horizontal = 16.dp)
+                                            .padding(top = 16.dp)
+                                            .padding(bottom = 10.dp),
+                                        urlState = webViewUrlState,
+                                        titleState = titleState,
+                                        searchText = searchText
+                                    )
+                                }
+                                SearchHistoryPanel(
+                                    modifier = Modifier.fillMaxSize(),
+                                    historyList = historyList.value,
+                                    onSelected = { performSearchOrNavigate(it) }
+                                )
+                            }
                         }
                     }
                     // WebView - 始终渲染，但根据搜索状态控制可见性
                     WebViewLayout(
                         modifier = Modifier.fillMaxSize(),
-                        onTitleChange = { titleState = it },
+                        onTitleChange = { titleState.value = it },
                         onPageStarted = { loadedUrl ->
                             if (loadedUrl.isNotEmpty() && loadedUrl != webViewUrlState.value) {
                                 webViewUrlState.value = loadedUrl
@@ -386,22 +422,113 @@ fun SearchField(
             .focusRequester(focusRequester),
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = { onSearch() }),
+        keyboardActions = KeyboardActions(onSearch = { if (searchText.text.trim().isEmpty()) onSearch() }),
         label = "搜索或输入网址",
         trailingIcon = {
-            if (searchText.text.isNotEmpty()) {
-                IconButton(
-                    modifier = Modifier.padding(end = 8.dp),
-                    onClick = { onValueChange(TextFieldValue("")) }
+            Icon(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .clickable(
+                        indication = null,
+                        interactionSource = null
+                    ) {
+                        onSearch()
+                    },
+                imageVector = MiuixIcons.Useful.Search,
+                contentDescription = "Search",
+                tint = if (searchText.text.trim().isEmpty()) {
+                    IconDefaults.DefaultTint().copy(alpha = 0.3f)
+                } else {
+                    IconDefaults.DefaultTint()
+                }
+            )
+        }
+    )
+}
+
+@Composable
+fun NowSiteInfo(
+    modifier: Modifier = Modifier,
+    urlState: MutableState<String>,
+    titleState: MutableState<String>,
+    searchText: MutableState<TextFieldValue>
+) {
+    val context = LocalContext.current
+    Column(
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 10.dp),
+//            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(
+                modifier = Modifier.weight(0.7f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    maxLines = 1,
+                    text = titleState.value,
+                    fontSize = 14.sp,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    maxLines = 1,
+                    text = urlState.value,
+                    fontSize = 12.sp,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Row(
+                modifier = Modifier.weight(0.3f),
+                horizontalArrangement = Arrangement.End
+            ) {
+                Column(
+                    modifier = Modifier.clickable(
+                        indication = null,
+                        interactionSource = null
+                    ) {
+                        context.copyToClipboard("URL", urlState.value)
+                        context.showToast("已复制链接")
+                    },
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        imageVector = MiuixIcons.Useful.Delete,
-                        contentDescription = "清除"
+                        modifier = Modifier.size(20.dp),
+                        imageVector = MiuixIcons.Useful.Copy,
+                        contentDescription = "复制"
+                    )
+                    Text(
+                        text = "复制",
+                        fontSize = 14.sp,
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .padding(start = 12.dp)
+                        .clickable(
+                            indication = null,
+                            interactionSource = null
+                        ) {
+                            searchText.value = TextFieldValue(urlState.value)
+                        },
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        modifier = Modifier.size(20.dp),
+                        imageVector = MiuixIcons.Useful.Edit,
+                        contentDescription = "编辑"
+                    )
+                    Text(
+                        text = "编辑",
+                        fontSize = 14.sp,
                     )
                 }
             }
         }
-    )
+        HorizontalDivider()
+    }
 }
 
 @Composable

@@ -92,9 +92,10 @@ fun HomePage(
                 HomeBigTitle()
                 Text(
                     testSate.value,
-                    modifier = Modifier.clickable {
-//                        testSate.value = Date().toString()
-                    })
+//                    modifier = Modifier.clickable {
+////                        testSate.value = Date().toString()
+//                    }
+                )
                 HomeSearchBar(navController)
                 HomeShortcut(navController)
             }

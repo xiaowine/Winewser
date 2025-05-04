@@ -23,6 +23,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +43,7 @@ import com.xiaowine.winebrowser.R
 import com.xiaowine.winebrowser.data.HomeShortcutItemData
 import com.xiaowine.winebrowser.ui.AddIcon
 import com.xiaowine.winebrowser.ui.MenuIcon
+import com.xiaowine.winebrowser.ui.component.BrowserMenu
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.FlowLayout
 import com.xiaowine.winebrowser.utils.Utils.base64ToPainter
@@ -74,13 +78,15 @@ fun HomePage(
 ) {
 //    var isInHtmlState by remember { mutableStateOf(urlToLoad != null) }
 
+    val context = LocalContext.current
+
+    var isMenuState = remember { mutableStateOf(false) }
     val testSate = rememberPreviewableState(
         realData = { AppConfig.title },
         previewData = "aaa",
         onSync = { AppConfig.title = it }
     )
 
-    val context = LocalContext.current
     Scaffold(
         content = { paddingValues ->
             Column(
@@ -101,11 +107,11 @@ fun HomePage(
             }
         },
         floatingToolbar = {
-            HomeToolbar()
+            HomeToolbar(isMenuState)
         },
         floatingToolbarPosition = ToolbarPosition.BottomEnd
     )
-
+    BrowserMenu(isMenuState)
     AnimatedVisibility(
         visible = BuildConfig.DEBUG
     ) {
@@ -120,7 +126,9 @@ fun HomePage(
 
 
 @Composable
-fun HomeToolbar() {
+fun HomeToolbar(
+    isMenuState: MutableState<Boolean>
+) {
     FloatingToolbar(
         modifier = Modifier
             .navigationBarsPadding()
@@ -132,11 +140,22 @@ fun HomeToolbar() {
                 AddIcon,
                 MenuIcon,
             )
-            iconsList.forEach {
+            iconsList.forEachIndexed { i, it ->
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 8.dp)
-                        .size(28.dp),
+                        .size(28.dp)
+                        .clickable(
+                            interactionSource = null,
+                            indication = null
+                        ) {
+                            when (i) {
+                                0 -> {}
+                                1 -> {
+                                    isMenuState.value = !isMenuState.value
+                                }
+                            }
+                        },
                 ) {
                     Icon(
                         modifier = Modifier

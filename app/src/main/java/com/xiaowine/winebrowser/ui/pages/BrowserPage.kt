@@ -1,7 +1,7 @@
 package com.xiaowine.winebrowser.ui.pages
 
-import androidx.compose.ui.graphics.asImageBitmap
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.net.Uri
 import android.util.Log
 import android.util.Patterns
@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -54,15 +55,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.xiaowine.winebrowser.App
-import com.xiaowine.winebrowser.config.AppConfig
 import com.xiaowine.winebrowser.BuildConfig
+import com.xiaowine.winebrowser.config.AppConfig
 import com.xiaowine.winebrowser.ui.AddIcon
 import com.xiaowine.winebrowser.ui.ArrowLeftIcon
 import com.xiaowine.winebrowser.ui.ArrowRightIcon
 import com.xiaowine.winebrowser.ui.LinkIcon
 import com.xiaowine.winebrowser.ui.MenuIcon
-import com.xiaowine.winebrowser.ui.component.FPSMonitor
+import com.xiaowine.winebrowser.ui.component.BrowserMenu
 import com.xiaowine.winebrowser.ui.component.BrowserTabCountBadge
+import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.WebViewLayout
 import com.xiaowine.winebrowser.utils.Utils.copyToClipboard
 import com.xiaowine.winebrowser.utils.Utils.rememberPreviewableState
@@ -105,6 +107,7 @@ fun BrowserPage(
     // 状态管理
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
+
     val historyList = rememberPreviewableState(
         realData = { AppConfig.searchHistory },
         previewData = AppConfig.searchDefault,
@@ -112,14 +115,17 @@ fun BrowserPage(
     )
     var siteTitleState = remember { mutableStateOf("") }
     var siteIconState = remember { mutableStateOf<Bitmap?>(null) }
+    var siteColorState = remember { mutableIntStateOf(Color.WHITE) }
 
     var searchText = remember { mutableStateOf(TextFieldValue("")) }
     val focusRequester = remember { FocusRequester() }
     var isSearchState = remember { mutableStateOf(isSearch) }
+    var isMenuState = remember { mutableStateOf(false) }
     var webViewUrlState = remember { mutableStateOf(urlToLoad ?: "") }
     val webViewState = remember { mutableStateOf<WebView?>(null) }
     var progress by remember { mutableIntStateOf(0) }
     var isFieldFocused by remember { mutableStateOf(false) }
+    var urlFromSearch by remember { mutableStateOf(false) }
 
     // 监听WebView实例和URL变化，确保URL正确加载
     LaunchedEffect(webViewUrlState.value) {
@@ -139,7 +145,7 @@ fun BrowserPage(
         searchText.value = TextFieldValue(siteTitleState.value)
     }
 
-    LaunchedEffect(isSearchState) {
+    LaunchedEffect(isSearchState.value) {
         if (isSearchState.value) {
             focusRequester.requestFocus()
             searchText.value = TextFieldValue("")
@@ -156,7 +162,7 @@ fun BrowserPage(
             val url = if (Patterns.WEB_URL.matcher(trimmedQuery).matches() || trimmedQuery.contains("://")) {
                 if (!trimmedQuery.contains("://")) "https://$trimmedQuery" else trimmedQuery
             } else {
-                "https://www.bing.com/search?q=${Uri.encode(trimmedQuery)}"
+                "https://cn.bing.com/search?q=${Uri.encode(trimmedQuery)}"
             }
 
             // 更新搜索历史记录
@@ -174,6 +180,7 @@ fun BrowserPage(
             focusManager.clearFocus()
             isSearchState.value = false
             webViewUrlState.value = url
+            urlFromSearch = true
         }
     }
 
@@ -203,116 +210,134 @@ fun BrowserPage(
 
     }
 
-    Scaffold(
-        topBar = {
-            // 搜索栏
-            BrowserSearchField(
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 6.dp)
-                    .onFocusChanged { focusState ->
-                        isFieldFocused = focusState.isFocused
-                        if (focusState.isFocused) {
-                            isSearchState.value = true
-                        }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        Scaffold(
+            topBar = {
+                // 搜索栏
+                BrowserSearchField(
+                    modifier = Modifier
+                        .background(
+                            if (isSearchState.value)
+                                MiuixTheme.colorScheme.background
+                            else
+                                androidx.compose.ui.graphics.Color(siteColorState.intValue)
+                        )
+                        .statusBarsPadding()
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 6.dp)
+                        .onFocusChanged { focusState ->
+                            isFieldFocused = focusState.isFocused
+                            if (focusState.isFocused) {
+                                isSearchState.value = true
+                            }
+                        },
+                    searchText = searchText.value,
+                    focusRequester = focusRequester,
+                    onValueChange = {
+                        searchText.value = it
                     },
-                searchText = searchText.value,
-                focusRequester = focusRequester,
-                onValueChange = {
-                    searchText.value = it
-                },
-                onSearch = { performSearchOrNavigate(searchText.value.text) },
-                webViewState = webViewState,
-                isSearchState = isSearchState,
-                siteIconState = siteIconState
-            )
+                    onSearch = { performSearchOrNavigate(searchText.value.text) },
+                    webViewState = webViewState,
+                    isSearchState = isSearchState,
+                    siteIconState = siteIconState
+                )
 
-            // 加载进度条
-            if (progress != 100 && !isSearchState.value) {
-                LinearProgressIndicator(progress = progress / 100f)
-            }
-        },
-        content = { paddingValues ->
-            // 添加一个全屏点击监听器作为最底层
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(
-                        interactionSource = null,
-                        indication = null
-                    ) {
-                        if (isFieldFocused) {
-                            focusManager.clearFocus()
-                        }
-                    }
-            ) {
-                // 内容区域
+                // 加载进度条
+                if (progress != 100 && !isSearchState.value) {
+                    LinearProgressIndicator(progress = progress / 100f)
+                }
+            },
+            content = { paddingValues ->
+                // 添加一个全屏点击监听器作为最底层
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(paddingValues)
-                ) {
-
-                    // 搜索状态下显示历史记录，使用Box包裹以防止点击事件穿透
-                    if (isSearchState.value) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MiuixTheme.colorScheme.background)
+                        .clickable(
+                            interactionSource = null,
+                            indication = null
                         ) {
-                            Column(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                if (siteTitleState.value.isNotEmpty()) {
-                                    BrowserNowSiteInfo(
-                                        modifier = Modifier
-                                            .padding(horizontal = 16.dp)
-                                            .padding(top = 16.dp)
-                                            .padding(bottom = 10.dp),
-                                        urlState = webViewUrlState,
-                                        titleState = siteTitleState,
-                                        searchText = searchText
-                                    )
-                                }
-                                BrowserSearchHistoryPanel(
-                                    modifier = Modifier.fillMaxSize(),
-                                    historyList = historyList.value,
-                                    onSelected = { performSearchOrNavigate(it) }
-                                )
+                            if (isFieldFocused) {
+                                focusManager.clearFocus()
                             }
                         }
-                    }
-                    WebViewLayout(
-                        modifier = Modifier.fillMaxSize(),
-                        onTitleChange = { siteTitleState.value = it },
-                        onIconChange = {
-                            siteIconState.value = it
-                        },
-                        onPageStarted = { loadedUrl ->
-                            if (loadedUrl.isNotEmpty() && loadedUrl != webViewUrlState.value) {
-                                webViewUrlState.value = loadedUrl
+                ) {
+                    // 内容区域
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues)
+                    ) {
+                        // 搜索状态下显示历史记录，使用Box包裹以防止点击事件穿透
+                        if (isSearchState.value) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MiuixTheme.colorScheme.background)
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    if (siteTitleState.value.isNotEmpty()) {
+                                        BrowserNowSiteInfo(
+                                            modifier = Modifier
+                                                .padding(horizontal = 16.dp)
+                                                .padding(top = 16.dp)
+                                                .padding(bottom = 10.dp),
+                                            urlState = webViewUrlState,
+                                            titleState = siteTitleState,
+                                            searchText = searchText
+                                        )
+                                    }
+                                    BrowserSearchHistoryPanel(
+                                        modifier = Modifier.fillMaxSize(),
+                                        historyList = historyList.value,
+                                        onSelected = { performSearchOrNavigate(it) }
+                                    )
+                                }
                             }
-                        },
-                        onProgressChanged = { progress = it },
-                        webViewState = webViewState,
-                        isVisible = !isSearchState.value
-                    )
-
+                        }
+                        WebViewLayout(
+                            modifier = Modifier.fillMaxSize(),
+                            onTitleChange = { siteTitleState.value = it },
+                            onIconChange = {
+//                                siteIconState.value = it
+                            },
+                            onPageStarted = { loadedUrl ->
+                                if (loadedUrl.isNotEmpty() && loadedUrl != webViewUrlState.value && !urlFromSearch) {
+                                    webViewUrlState.value = loadedUrl
+                                } else {
+                                    urlFromSearch = false
+                                }
+                            },
+                            onPageColorChange = {
+                                siteColorState.intValue = it
+                            },
+                            onProgressChanged = { progress = it },
+                            webViewState = webViewState,
+                            isVisible = !isSearchState.value
+                        )
+                    }
                 }
-            }
-        },
-        bottomBar = {
-            // 非搜索状态下显示底部导航栏
-            if (!isSearchState.value) {
-                BrowserButtonBar(
-                    navController,
-                    webViewState,
-                    webViewUrlState
-                )
-            }
-        },
-    )
+            },
+            bottomBar = {
+                // 非搜索状态下显示底部导航栏
+                if (!isSearchState.value) {
+                    BrowserButtonBar(
+                        modifier = Modifier
+                            .background(androidx.compose.ui.graphics.Color(siteColorState.intValue)),
+                        navController = navController,
+                        webViewState = webViewState,
+                        webViewUrlState = webViewUrlState,
+                        isMenuState = isMenuState
+                    )
+                }
+            },
+        )
+        BrowserMenu(isMenuState)
+    }
 
     AnimatedVisibility(
         visible = BuildConfig.DEBUG
@@ -328,12 +353,14 @@ fun BrowserPage(
 
 @Composable
 fun BrowserButtonBar(
+    modifier: Modifier = Modifier,
     navController: NavController,
     webViewState: MutableState<WebView?>,
-    webViewUrlState: MutableState<String>
+    webViewUrlState: MutableState<String>,
+    isMenuState: MutableState<Boolean>,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(horizontal = 16.dp),
@@ -361,17 +388,25 @@ fun BrowserButtonBar(
                 modifier = Modifier
                     .padding(vertical = 10.dp)
                     .size(32.dp)
-                    .clickable(enabled = (i == 0) || (i == 1 && canGoForward.value)) {
-                        if (i == 0) {
-                            if (webView?.canGoBack() == true) {
-                                webView.goBack()
-                            } else {
-                                navController.navigate("home") {
-                                    popUpTo(0) { inclusive = false }
+                    .clickable {
+                        when (i) {
+                            0 -> {
+                                if (webView?.canGoBack() == true) {
+                                    webView.goBack()
+                                } else {
+                                    navController.navigate("home") {
+                                        popUpTo(0) { inclusive = false }
+                                    }
                                 }
                             }
-                        } else if (i == 1) {
-                            webView?.goForward()
+
+                            1 -> {
+                                webView?.goForward()
+                            }
+
+                            4 -> {
+                                isMenuState.value = !isMenuState.value
+                            }
                         }
                         if (i <= 1) {
                             canGoForward.value = webView?.canGoForward() == true
@@ -446,24 +481,29 @@ fun BrowserSearchField(
         leadingIcon = {
             val modifier = Modifier
                 .padding(horizontal = 5.dp)
-                .padding(start = 5.dp)
                 .size(24.dp)
-            if (siteIconState.value != null) {
-                Image(
-                    modifier = modifier,
-                    painter = BitmapPainter(siteIconState.value!!.asImageBitmap()),
-                    contentDescription = null,
+            if (!isSearchState.value) {
+                if (siteIconState.value != null) {
+                    Image(
+                        modifier = modifier,
+                        painter = BitmapPainter(siteIconState.value!!.asImageBitmap()),
+                        contentDescription = null,
                     )
+                } else {
+                    Icon(
+                        modifier = modifier
+                            .clickable(
+                                indication = null,
+                                interactionSource = null
+                            ) {},
+                        imageVector = MiuixIcons.Useful.NavigatorSwitch,
+                        contentDescription = "Search",
+                        tint = IconDefaults.DefaultTint()
+                    )
+                }
             } else {
-                Icon(
+                Spacer(
                     modifier = modifier
-                        .clickable(
-                            indication = null,
-                            interactionSource = null
-                        ) {},
-                    imageVector = MiuixIcons.Useful.NavigatorSwitch,
-                    contentDescription = "Search",
-                    tint = IconDefaults.DefaultTint()
                 )
             }
         },

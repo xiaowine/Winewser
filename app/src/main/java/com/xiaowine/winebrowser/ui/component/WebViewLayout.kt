@@ -29,6 +29,7 @@ fun WebViewLayout(
     onProgressChanged: (Int) -> Unit,
     onIconChange: (Bitmap) -> Unit,
     onPageStarted: (String) -> Unit,
+    onPageColorChange: (Int) -> Unit,
     webViewState: MutableState<WebView?>,
     isVisible: Boolean = true
 ) {
@@ -74,7 +75,7 @@ fun WebViewLayout(
 
                 // 设置WebView客户端
                 webChromeClient = WinewserWebChromeClient(onTitleChange, onIconChange, onProgressChanged)
-                webViewClient = WinewserWebViewClient(onPageStarted)
+                webViewClient = WinewserWebViewClient(onPageStarted, onPageColorChange)
 
                 // 配置Cookie
                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)

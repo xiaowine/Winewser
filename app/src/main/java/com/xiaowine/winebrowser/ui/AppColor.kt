@@ -11,7 +11,7 @@ fun appLightColorScheme(): AppColorsData {
         homeSearchLineColor = Color("#333333".toColorInt()),
         homeShortBackgroundColor = Color("#e6e6e6".toColorInt()),
         searchTextColor = Color("#444746".toColorInt()),
-        searchHistoryBackgroundColor = Color("#F7F7F8".toColorInt()),
+        searchHistoryBackgroundColor = Color("#e6e6e6".toColorInt()),
         iconTintColor = Color("#444746".toColorInt()),
     )
 }

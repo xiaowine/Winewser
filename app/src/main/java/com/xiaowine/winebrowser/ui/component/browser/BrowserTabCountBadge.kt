@@ -1,4 +1,4 @@
-package com.xiaowine.winebrowser.ui.component
+package com.xiaowine.winebrowser.ui.component.browser
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

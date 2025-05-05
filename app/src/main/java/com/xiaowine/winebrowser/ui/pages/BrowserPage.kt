@@ -12,6 +12,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,8 +67,9 @@ import com.xiaowine.winebrowser.ui.component.BrowserMenu
 import com.xiaowine.winebrowser.ui.component.BrowserTabCountBadge
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.WebViewLayout
+import com.xiaowine.winebrowser.ui.theme.AppTheme
+import com.xiaowine.winebrowser.utils.ConfigUtils.rememberPreviewableState
 import com.xiaowine.winebrowser.utils.Utils.copyToClipboard
-import com.xiaowine.winebrowser.utils.Utils.rememberPreviewableState
 import com.xiaowine.winebrowser.utils.Utils.showToast
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
@@ -220,14 +222,14 @@ fun BrowserPage(
                 BrowserSearchField(
                     modifier = Modifier
                         .background(
-                            if (isSearchState.value)
+                            if (isSearchState.value || isSystemInDarkTheme())
                                 MiuixTheme.colorScheme.background
                             else
                                 androidx.compose.ui.graphics.Color(siteColorState.intValue)
                         )
                         .statusBarsPadding()
                         .padding(horizontal = 16.dp)
-                        .padding(bottom = 6.dp)
+                        .padding(vertical = 6.dp)
                         .onFocusChanged { focusState ->
                             isFieldFocused = focusState.isFocused
                             if (focusState.isFocused) {
@@ -303,7 +305,7 @@ fun BrowserPage(
                             modifier = Modifier.fillMaxSize(),
                             onTitleChange = { siteTitleState.value = it },
                             onIconChange = {
-//                                siteIconState.value = it
+                                siteIconState.value = it
                             },
                             onPageStarted = { loadedUrl ->
                                 if (loadedUrl.isNotEmpty() && loadedUrl != webViewUrlState.value && !urlFromSearch) {
@@ -327,7 +329,12 @@ fun BrowserPage(
                 if (!isSearchState.value) {
                     BrowserButtonBar(
                         modifier = Modifier
-                            .background(androidx.compose.ui.graphics.Color(siteColorState.intValue)),
+                            .background(
+                                if (isSystemInDarkTheme())
+                                    MiuixTheme.colorScheme.background
+                                else
+                                    androidx.compose.ui.graphics.Color(siteColorState.intValue)
+                            ),
                         navController = navController,
                         webViewState = webViewState,
                         webViewUrlState = webViewUrlState,
@@ -466,7 +473,7 @@ fun BrowserSearchField(
             .height(55.dp)
             .border(
                 width = 2.dp,
-                color = MiuixTheme.colorScheme.onBackground,
+                color = AppTheme.colorScheme.homeSearchLineColor,
                 shape = SmoothRoundedCornerShape(15.dp)
             )
             .focusRequester(focusRequester),
@@ -480,7 +487,7 @@ fun BrowserSearchField(
         label = "搜索或输入网址",
         leadingIcon = {
             val modifier = Modifier
-                .padding(horizontal = 5.dp)
+                .padding(horizontal = 10.dp)
                 .size(24.dp)
             if (!isSearchState.value) {
                 if (siteIconState.value != null) {
@@ -498,12 +505,13 @@ fun BrowserSearchField(
                             ) {},
                         imageVector = MiuixIcons.Useful.NavigatorSwitch,
                         contentDescription = "Search",
-                        tint = IconDefaults.DefaultTint()
+                        tint = AppTheme.colorScheme.iconTintColor
                     )
                 }
             } else {
                 Spacer(
-                    modifier = modifier
+                    modifier = Modifier
+                        .size(16.dp)
                 )
             }
         },
@@ -524,9 +532,9 @@ fun BrowserSearchField(
                 imageVector = if (isSearchState.value) MiuixIcons.Useful.Search else MiuixIcons.Useful.Refresh,
                 contentDescription = "Search",
                 tint = if (searchText.text.trim().isEmpty()) {
-                    IconDefaults.DefaultTint().copy(alpha = 0.3f)
+                    AppTheme.colorScheme.iconTintColor.copy(alpha = 0.3f)
                 } else {
-                    IconDefaults.DefaultTint()
+                    AppTheme.colorScheme.iconTintColor
                 }
             )
         }
@@ -548,7 +556,6 @@ fun BrowserNowSiteInfo(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 10.dp),
-//            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(
                 modifier = Modifier.weight(0.7f),
@@ -584,7 +591,8 @@ fun BrowserNowSiteInfo(
                     Icon(
                         modifier = Modifier.size(20.dp),
                         imageVector = MiuixIcons.Useful.Copy,
-                        contentDescription = "复制"
+                        contentDescription = "复制",
+                        tint = AppTheme.colorScheme.iconTintColor
                     )
                     Text(
                         text = "复制",
@@ -605,7 +613,8 @@ fun BrowserNowSiteInfo(
                     Icon(
                         modifier = Modifier.size(20.dp),
                         imageVector = MiuixIcons.Useful.Edit,
-                        contentDescription = "编辑"
+                        contentDescription = "编辑",
+                        tint = AppTheme.colorScheme.iconTintColor
                     )
                     Text(
                         text = "编辑",
@@ -641,9 +650,9 @@ fun BrowserSearchHistoryPanel(
                 Row(
                     modifier = Modifier
                         .clip(SmoothRoundedCornerShape(12.dp))
-                        .background(MiuixTheme.colorScheme.dividerLine)
+                        .background(AppTheme.colorScheme.searchHistoryBackgroundColor)
                         .clickable { onSelected(item) }
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -653,7 +662,8 @@ fun BrowserSearchHistoryPanel(
                                 .rotate(90f)
                                 .size(20.dp),
                             imageVector = LinkIcon,
-                            contentDescription = "链接"
+                            contentDescription = "链接",
+                            tint = AppTheme.colorScheme.iconTintColor
                         )
                     }
                     Text(

@@ -76,14 +76,13 @@ fun TestHomePage() {
 fun HomePage(
     navController: NavController = NavController(LocalContext.current),
 ) {
-//    var isInHtmlState by remember { mutableStateOf(urlToLoad != null) }
 
     val context = LocalContext.current
 
     var isMenuState = remember { mutableStateOf(false) }
     val testSate = rememberPreviewableState(
         realData = { AppConfig.title },
-        previewData = "aaa",
+        previewData = AppConfig.TITLE_DEFAULT,
         onSync = { AppConfig.title = it }
     )
 

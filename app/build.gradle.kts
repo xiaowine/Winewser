@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("androidx.room")
+    id("com.google.devtools.ksp")
+
 }
 val localProperties = org.jetbrains.kotlin.konan.properties.Properties()
 if (rootProject.file("local.properties").canRead()) localProperties.load(rootProject.file("local.properties").inputStream())
@@ -58,10 +61,14 @@ android {
         compose = true
     }
     kotlin.jvmToolchain(21)
+    room {
+        schemaDirectory("$projectDir/schemas")
+    }
 }
 
 dependencies {
-
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -74,9 +81,9 @@ dependencies {
     implementation(libs.androidx.animation)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.miuix.android)
-    implementation(libs.mmkv)
-    implementation(libs.serialize) {
-        exclude("com.tencent", "mmkv-static")
-    }
+//    implementation(libs.mmkv)
+//    implementation(libs.serialize) {
+//        exclude("com.tencent", "mmkv-static")
+//    }
     debugImplementation(libs.androidx.ui.tooling)
 }

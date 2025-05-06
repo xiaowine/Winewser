@@ -55,6 +55,7 @@ fun WebViewLayout(
                     allowContentAccess = true                               // 允许访问内容
                     allowFileAccess = true                                  // 允许访问文件
                     builtInZoomControls = true                              // 启用内置缩放控件
+                    @Suppress("DEPRECATION")
                     databaseEnabled = true                                  // 启用数据库存储
                     displayZoomControls = false                             // 不显示缩放控件
                     mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW // 允许混合内容

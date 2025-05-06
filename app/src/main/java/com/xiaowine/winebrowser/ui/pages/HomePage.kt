@@ -25,7 +25,6 @@ import com.xiaowine.winebrowser.ui.component.home.HomeHeadline
 import com.xiaowine.winebrowser.ui.component.home.HomeSearchBar
 import com.xiaowine.winebrowser.ui.component.home.HomeShortcut
 import com.xiaowine.winebrowser.ui.component.home.HomeToolbar
-import com.xiaowine.winebrowser.utils.ConfigUtils.rememberPreviewableState
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.ToolbarPosition
@@ -50,12 +49,7 @@ fun HomePage(
     navController: NavController = NavController(LocalContext.current),
 ) {
     var isMenuState = rememberSaveable { mutableStateOf(false) }
-    val testSate = rememberPreviewableState(
-        realData = { AppConfig.title },
-        previewData = AppConfig.TITLE_DEFAULT,
-        onSync = { AppConfig.title = it }
-    )
-
+    val context = LocalContext.current
     Scaffold(
         content = { paddingValues ->
             Column(
@@ -66,9 +60,18 @@ fun HomePage(
             ) {
                 HomeHeadline()
                 Text(
-                    testSate.value,
+                    "Wine Browser",
 //                    modifier = Modifier.clickable {
-////                        testSate.value = Date().toString()
+//                        val db = Room.databaseBuilder(
+//                            context,
+//                            AppDatabase::class.java, "database-name"
+//                        ).build()
+//                        MainScope().launch {
+//                            val searchHistory = SearchHistoryEntity(content = "测试内容")
+//                            db.userDao().insert(searchHistory)
+//                            val size = db.userDao().getAll().size
+//                            testSate.value = "历史记录数: $size"
+//                        }
 //                    }
                 )
                 HomeSearchBar(navController)
@@ -92,3 +95,4 @@ fun HomePage(
         )
     }
 }
+

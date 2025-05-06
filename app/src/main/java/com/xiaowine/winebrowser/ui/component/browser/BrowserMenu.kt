@@ -60,7 +60,7 @@ fun BrowserMenu(
                 state = pagerState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .widthIn(max = 400.dp)
+                    .widthIn(max = 450.dp)
                     .background(
                         color = MiuixTheme.colorScheme.background,
                         shape = SmoothRoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomEnd = 0.dp, bottomStart = 0.dp)

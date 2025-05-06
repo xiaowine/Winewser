@@ -7,7 +7,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
@@ -25,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import com.xiaowine.winebrowser.ui.theme.AppTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
-import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.NavigatorSwitch
 import top.yukonga.miuix.kmp.icon.icons.useful.Refresh
@@ -45,7 +43,7 @@ fun BrowserSearchField(
     siteIconState: MutableState<Bitmap?>,
     isLoading: () -> Boolean,
 ) {
-    TextField(
+    BrowserTextField(
         value = searchText,
         onValueChange = {
             val filteredText = it.copy(text = it.text.replace("\n", ""))
@@ -56,7 +54,6 @@ fun BrowserSearchField(
         backgroundColor = MiuixTheme.colorScheme.background,
         modifier = modifier
             .fillMaxWidth()
-            .height(55.dp)
             .border(
                 width = 2.dp,
                 color = AppTheme.colorScheme.homeSearchLineColor,

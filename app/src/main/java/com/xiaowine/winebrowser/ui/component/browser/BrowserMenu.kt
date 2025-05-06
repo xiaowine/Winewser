@@ -55,7 +55,6 @@ fun BrowserMenu(
                     isMenuState.value = !isMenuState.value
                 }
         ) {
-
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier

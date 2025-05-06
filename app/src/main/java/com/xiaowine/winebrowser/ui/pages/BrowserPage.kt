@@ -1,7 +1,6 @@
 package com.xiaowine.winebrowser.ui.pages
 
 import android.graphics.Bitmap
-import android.graphics.Color
 import android.net.Uri
 import android.util.Log
 import android.util.Patterns
@@ -19,14 +18,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,6 +45,7 @@ import com.xiaowine.winebrowser.ui.component.browser.BrowserSearchHistoryPanel
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.WebViewLayout
 import com.xiaowine.winebrowser.utils.ConfigUtils.rememberPreviewableState
+import com.xiaowine.winebrowser.utils.Utils.isColorSimilar
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -63,8 +66,9 @@ fun TestBrowser() {
 @Composable
 fun BrowserPage(
     navController: NavController,
-    urlToLoad: String?,
-    isSearch: Boolean = false
+    isSearchState: MutableState<Boolean>,
+    webViewUrlState: MutableState<String>,
+    webViewState: MutableState<WebView?>
 ) {
     // 状态管理
     val focusManager = LocalFocusManager.current
@@ -76,14 +80,11 @@ fun BrowserPage(
     )
     var siteTitleState = remember { mutableStateOf("") }
     var siteIconState = remember { mutableStateOf<Bitmap?>(null) }
-    var siteColorState = remember { mutableIntStateOf(Color.WHITE) }
+    var siteColorState = remember { mutableIntStateOf(android.graphics.Color.WHITE) }
 
     var searchText = remember { mutableStateOf(TextFieldValue("")) }
     val focusRequester = remember { FocusRequester() }
-    var isSearchState = remember { mutableStateOf(isSearch) }
-    var isMenuState = remember { mutableStateOf(false) }
-    var webViewUrlState = remember { mutableStateOf(urlToLoad ?: "") }
-    val webViewState = remember { mutableStateOf<WebView?>(null) }
+    var isMenuState = rememberSaveable { mutableStateOf(false) }
     var progress = remember { mutableIntStateOf(0) }
     var isFieldFocused by remember { mutableStateOf(false) }
     var urlFromSearch by remember { mutableStateOf(false) }
@@ -116,6 +117,7 @@ fun BrowserPage(
         }
     }
 
+    val color = MiuixTheme.colorScheme.background
     // 执行搜索或导航的 Lambda 函数
     val performSearchOrNavigate: (String) -> Unit = { query ->
         val trimmedQuery = query.trim()
@@ -262,6 +264,7 @@ fun BrowserPage(
                             siteIconState.value = it
                         },
                         onPageStarted = { loadedUrl ->
+                            println("onPageStarted")
                             if (loadedUrl.isNotEmpty() && loadedUrl != webViewUrlState.value && !urlFromSearch) {
                                 webViewUrlState.value = loadedUrl
                             } else {
@@ -269,7 +272,16 @@ fun BrowserPage(
                             }
                         },
                         onPageColorChange = {
-                            siteColorState.intValue = it
+                            println("onPageColorChange")
+                            val themeColor = color.value.toInt()
+                            if (it == -1) siteColorState.intValue = themeColor
+                            val similar = isColorSimilar(Color(it), color)
+                            if (similar) {
+                                siteColorState.intValue = themeColor
+                            } else {
+                                siteColorState.intValue = it
+                            }
+//                            siteColorState.intValue = it
                         },
                         onProgressChanged = { progress.intValue = it },
                         webViewState = webViewState,
@@ -286,7 +298,7 @@ fun BrowserPage(
                                 if (isSystemInDarkTheme())
                                     MiuixTheme.colorScheme.background
                                 else
-                                    androidx.compose.ui.graphics.Color(siteColorState.intValue)
+                                    Color(siteColorState.intValue)
                             ),
                         navController = navController,
                         webViewState = webViewState,

@@ -1,4 +1,5 @@
 package com.xiaowine.winebrowser.ui.component.home
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -52,6 +53,7 @@ fun HomeShortcutItem(
                         imageVector = AddIcon,
                         modifier = Modifier.padding(10.dp),
                         contentDescription = itemData.title,
+                        tint = AppTheme.colorScheme.iconTintColor
                     )
                 }
 

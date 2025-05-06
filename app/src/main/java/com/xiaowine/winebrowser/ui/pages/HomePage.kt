@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -19,8 +19,8 @@ import androidx.navigation.NavController
 import com.xiaowine.winebrowser.App
 import com.xiaowine.winebrowser.BuildConfig
 import com.xiaowine.winebrowser.config.AppConfig
-import com.xiaowine.winebrowser.ui.component.browser.BrowserMenu
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
+import com.xiaowine.winebrowser.ui.component.browser.BrowserMenu
 import com.xiaowine.winebrowser.ui.component.home.HomeHeadline
 import com.xiaowine.winebrowser.ui.component.home.HomeSearchBar
 import com.xiaowine.winebrowser.ui.component.home.HomeShortcut
@@ -49,7 +49,7 @@ fun TestHomePage() {
 fun HomePage(
     navController: NavController = NavController(LocalContext.current),
 ) {
-    var isMenuState = remember { mutableStateOf(false) }
+    var isMenuState = rememberSaveable { mutableStateOf(false) }
     val testSate = rememberPreviewableState(
         realData = { AppConfig.title },
         previewData = AppConfig.TITLE_DEFAULT,

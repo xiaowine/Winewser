@@ -1,20 +1,13 @@
 package com.xiaowine.winebrowser.ui.component.browser
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -26,10 +19,11 @@ import androidx.compose.ui.unit.sp
 import com.xiaowine.winebrowser.ui.component.FlowLayout
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.extra.SuperDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Copy
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
+import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.dismissDialog
 import kotlin.math.absoluteValue
 
 
@@ -37,46 +31,17 @@ import kotlin.math.absoluteValue
 fun BrowserMenu(
     isMenuState: MutableState<Boolean>
 ) {
-
     val pagerState = rememberPagerState(pageCount = { 3 })
 
-    BackHandler(
-        enabled = isMenuState.value
+    SuperDialog(
+        show = isMenuState,
+        onDismissRequest = { dismissDialog(isMenuState) },
     ) {
-        isMenuState.value = false
-    }
-
-    AnimatedVisibility(
-        visible = isMenuState.value,
-        enter = fadeIn(),
-        exit = fadeOut()
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MiuixTheme.colorScheme.onBackground.copy(alpha = 0.3f))
-                .clickable(
-                    interactionSource = null,
-                    indication = null
-                ) {
-                    isMenuState.value = !isMenuState.value
-                }
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .widthIn(max = 450.dp)
-                    .background(
-                        color = MiuixTheme.colorScheme.background,
-                        shape = SmoothRoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomEnd = 0.dp, bottomStart = 0.dp)
-                    )
-                    .navigationBarsPadding()
-                    .padding(bottom = 16.dp)
-                    .padding(
-                        vertical = 16.dp,
-                        horizontal = 30.dp
-                    )
             ) {
                 FlowLayout(
                     modifier = Modifier,
@@ -91,7 +56,9 @@ fun BrowserMenu(
                         "桌面版" to MiuixIcons.Useful.Copy,
                         "夜间模式" to MiuixIcons.Useful.Copy,
                         "无图模式" to MiuixIcons.Useful.Copy,
-                        "全屏" to MiuixIcons.Useful.Copy
+                        "全屏模式" to MiuixIcons.Useful.Copy,
+                        "历史记录" to MiuixIcons.Useful.Copy,
+                        "无痕模式" to MiuixIcons.Useful.Copy,
                     )
 
                     menuItems.forEach { (title, icon) ->
@@ -130,10 +97,7 @@ fun BrowserMenu(
             }
             Row(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 15.dp)
-                    .padding(horizontal = 30.dp),
+                    .padding(top = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {

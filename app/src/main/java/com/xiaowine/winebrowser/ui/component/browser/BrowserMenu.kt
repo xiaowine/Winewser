@@ -23,6 +23,7 @@ import top.yukonga.miuix.kmp.extra.SuperDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Copy
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.MiuixPopupUtils.Companion.dismissDialog
 import kotlin.math.absoluteValue
 
 
@@ -34,7 +35,7 @@ fun BrowserMenu(
 
     SuperDialog(
         show = isMenuState,
-        onDismissRequest = { isMenuState.value = false },
+        onDismissRequest = { dismissDialog(isMenuState) },
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally

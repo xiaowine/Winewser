@@ -61,10 +61,14 @@ fun FlowLayout(
             rows.forEachIndexed { rowIndex, row ->
                 val rowWidth = rowWidths[rowIndex]
 
-                if (rows.size == 1) {
-                    spacing = (width - rowWidth) / (row.size - 1)
-                } else if (rowIndex != rows.size - 1) {
-                    spacing = (width - rowWidth) / (row.size - 1)
+                spacing = if (row.size > 1) {
+                    if (rows.size > 1 && (rowIndex != rows.size - 1 || (rowIndex > 0 && row.size == rows[rowIndex - 1].size))) {
+                        (width - rowWidth) / (row.size - 1)
+                    } else {
+                        horizontalSpacingPx
+                    }
+                } else {
+                    0
                 }
 
                 var x = 0

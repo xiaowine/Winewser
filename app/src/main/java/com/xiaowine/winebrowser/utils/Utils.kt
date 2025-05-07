@@ -12,9 +12,21 @@ import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.room.Room
+import com.xiaowine.winebrowser.database.AppDatabase
 import kotlin.math.abs
 
 object Utils {
+
+    var isPreview: Boolean = true
+
+    fun getDB(context: Context): AppDatabase {
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java, "database-name"
+        ).build()
+    }
+
     fun Context.copyToClipboard(label: String, text: String) {
         val clipboard = this.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clip = android.content.ClipData.newPlainText(label, text)

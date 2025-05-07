@@ -4,9 +4,11 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -15,7 +17,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.xiaowine.winebrowser.config.AppConfig
+import com.xiaowine.winebrowser.utils.AppInitializer
+import com.xiaowine.winebrowser.utils.Utils
 import com.xiaowine.winebrowser.ui.appDarkColorScheme
 import com.xiaowine.winebrowser.ui.appLightColorScheme
 import com.xiaowine.winebrowser.ui.pages.BrowserPage
@@ -42,13 +45,21 @@ fun App(
     }
 
     val isPreview = LocalInspectionMode.current
-    AppConfig.isPreview = isPreview
+    Utils.isPreview = isPreview
 
     // 用 rememberSaveable 保持 isSearchState 状态
     val isSearchState = rememberSaveable { mutableStateOf(false) }
     // 提升 webViewUrlState 和 webViewState
     val webViewUrlState = rememberSaveable { mutableStateOf("") }
     val webViewState = remember { mutableStateOf<WebView?>(null) }
+    
+    // 获取上下文并在非预览模式下初始化应用
+    val context = LocalContext.current
+    LaunchedEffect(Unit) {
+        if (!isPreview) {
+            AppInitializer.initializeAppIfNeeded(context)
+        }
+    }
 
     AppTheme(
         colors = theme,
@@ -106,4 +117,3 @@ fun NavGraphBuilder.pageDestinations(
         )
     }
 }
-

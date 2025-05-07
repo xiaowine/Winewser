@@ -1,6 +1,5 @@
 package com.xiaowine.winebrowser.ui.pages
 
-import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.captionBarPadding
@@ -8,17 +7,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.xiaowine.winebrowser.App
 import com.xiaowine.winebrowser.BuildConfig
-import com.xiaowine.winebrowser.config.AppConfig
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.browser.BrowserMenu
 import com.xiaowine.winebrowser.ui.component.home.HomeHeadline
@@ -28,20 +27,19 @@ import com.xiaowine.winebrowser.ui.component.home.HomeToolbar
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.ToolbarPosition
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@Composable
-@Preview(showSystemUi = true, device = "spec:parent=pixel_fold")
-@Preview(showSystemUi = true)
-@Preview(
-    showSystemUi = true,
-    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
-)
-fun TestHomePage() {
-    MiuixTheme {
-        App()
-    }
-}
+//@Composable
+//@Preview(showSystemUi = true, device = "spec:parent=pixel_fold")
+//@Preview(showSystemUi = true)
+//@Preview(
+//    showSystemUi = true,
+//    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
+//)
+//fun TestHomePage() {
+//    MiuixTheme {
+//        App()
+//    }
+//}
 
 
 @Composable
@@ -49,7 +47,10 @@ fun HomePage(
     navController: NavController = NavController(LocalContext.current),
 ) {
     var isMenuState = rememberSaveable { mutableStateOf(false) }
+    var testSate by remember { mutableStateOf("Wine Browser") }
     val context = LocalContext.current
+
+
     Scaffold(
         content = { paddingValues ->
             Column(
@@ -60,17 +61,11 @@ fun HomePage(
             ) {
                 HomeHeadline()
                 Text(
-                    "Wine Browser",
+                    testSate,
 //                    modifier = Modifier.clickable {
-//                        val db = Room.databaseBuilder(
-//                            context,
-//                            AppDatabase::class.java, "database-name"
-//                        ).build()
+//                        val db = getDB(context)
 //                        MainScope().launch {
-//                            val searchHistory = SearchHistoryEntity(content = "测试内容")
-//                            db.userDao().insert(searchHistory)
-//                            val size = db.userDao().getAll().size
-//                            testSate.value = "历史记录数: $size"
+//                            testSate = "历史记录数: $0"
 //                        }
 //                    }
                 )

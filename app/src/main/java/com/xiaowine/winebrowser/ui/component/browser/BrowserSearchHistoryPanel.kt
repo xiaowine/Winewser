@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.xiaowine.winebrowser.data.entity.SearchHistoryEntity
 import com.xiaowine.winebrowser.ui.LinkIcon
 import com.xiaowine.winebrowser.ui.theme.AppTheme
 import top.yukonga.miuix.kmp.basic.Icon
@@ -30,7 +31,7 @@ import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
 @Composable
 fun BrowserSearchHistoryPanel(
     modifier: Modifier = Modifier,
-    historyList: List<String>,
+    historyList: List<SearchHistoryEntity>,
     onSelected: (String) -> Unit
 ) {
     Column(
@@ -45,13 +46,13 @@ fun BrowserSearchHistoryPanel(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             historyList.forEach { item ->
-                val cleanItem = item.replace("\n", "")
+                val cleanItem = item.content.replace("\n", "")
                 val isLink = Patterns.WEB_URL.matcher(cleanItem).matches() || cleanItem.contains("://")
                 Row(
                     modifier = Modifier
                         .clip(SmoothRoundedCornerShape(12.dp))
                         .background(AppTheme.colorScheme.searchHistoryBackgroundColor)
-                        .clickable { onSelected(item) }
+                        .clickable { onSelected(item.content) }
                         .padding(horizontal = 10.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)

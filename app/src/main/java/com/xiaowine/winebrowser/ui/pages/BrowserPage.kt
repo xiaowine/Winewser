@@ -31,13 +31,11 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.xiaowine.winebrowser.App
 import com.xiaowine.winebrowser.BuildConfig
-import com.xiaowine.winebrowser.model.ViewModel
+import com.xiaowine.winebrowser.model.SearchHistoryViewModel
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.WebViewLayout
 import com.xiaowine.winebrowser.ui.component.browser.BrowserButtonBar
@@ -50,18 +48,18 @@ import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@Composable
-@Preview(showSystemUi = true, device = "spec:parent=pixel_fold")
-@Preview(showSystemUi = true)
-@Preview(
-    showSystemUi = true,
-    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES or android.content.res.Configuration.UI_MODE_TYPE_NORMAL
-)
-fun TestBrowser() {
-    MiuixTheme {
-        App("browser?url=&isSearch=true")
-    }
-}
+//@Composable
+//@Preview(showSystemUi = true, device = "spec:parent=pixel_fold")
+//@Preview(showSystemUi = true)
+//@Preview(
+//    showSystemUi = true,
+//    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES or android.content.res.Configuration.UI_MODE_TYPE_NORMAL
+//)
+//fun TestBrowser() {
+//    MiuixTheme {
+//        App("browser?url=&isSearch=true")
+//    }
+//}
 
 @Composable
 fun BrowserPage(
@@ -73,17 +71,10 @@ fun BrowserPage(
     // 状态管理
     val focusManager = LocalFocusManager.current
 
-    val viewModel: ViewModel = viewModel()
-    
-    // 直接使用 viewModel 中的 MutableState
-    val historyList = viewModel.historyList.value.map { it.content }
-    
-    // 在搜索状态变化时刷新历史记录
-    LaunchedEffect(isSearchState.value) {
-        if (isSearchState.value) {
-            viewModel.refreshHistoryList()
-        }
-    }
+    val searchHistoryViewModel = viewModel<SearchHistoryViewModel>()
+
+    val historyList = searchHistoryViewModel.historyList.value
+
 
     var siteTitleState = remember { mutableStateOf("") }
     var siteIconState = remember { mutableStateOf<Bitmap?>(null) }
@@ -137,10 +128,10 @@ fun BrowserPage(
             }
 
             // 添加到搜索历史记录并刷新列表
-            viewModel.addSearchHistory(trimmedQuery)
+            searchHistoryViewModel.addSearchHistory(trimmedQuery)
             // 清理旧记录，保留最新的20条
-            viewModel.clearOutdatedHistory(20)
-            
+            searchHistoryViewModel.clearOutdatedHistory(20)
+
             // 隐藏键盘，更新状态并加载URL
             focusManager.clearFocus()
             isSearchState.value = false
@@ -188,7 +179,7 @@ fun BrowserPage(
                             if (isSearchState.value || isSystemInDarkTheme())
                                 MiuixTheme.colorScheme.background
                             else
-                                androidx.compose.ui.graphics.Color(siteColorState.intValue)
+                                Color(siteColorState.intValue)
                         )
                         .statusBarsPadding()
                         .padding(horizontal = 16.dp)

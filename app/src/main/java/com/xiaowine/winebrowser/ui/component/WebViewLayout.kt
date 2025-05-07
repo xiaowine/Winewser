@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
-import com.xiaowine.winebrowser.config.AppConfig
+import com.xiaowine.winebrowser.utils.Utils
 import com.xiaowine.winebrowser.BuildConfig
 import com.xiaowine.winebrowser.webview.WinewserWebChromeClient
 import com.xiaowine.winebrowser.webview.WinewserWebViewClient
@@ -35,7 +35,7 @@ fun WebViewLayout(
 ) {
     var webView: WebView? by remember { mutableStateOf(null) }
 
-    if (AppConfig.isPreview) return
+    if (Utils.isPreview) return
 
     AndroidView(
         modifier = modifier.background(Color.Transparent),
@@ -56,7 +56,7 @@ fun WebViewLayout(
                     allowFileAccess = true                                  // 允许访问文件
                     builtInZoomControls = true                              // 启用内置缩放控件
                     @Suppress("DEPRECATION")
-                    databaseEnabled = true                                  // 启用数据库存储
+                    databaseEnabled = false                                  // 启用数据库存储
                     displayZoomControls = false                             // 不显示缩放控件
                     mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW // 允许混合内容
                     domStorageEnabled = true                                // 启用DOM存储

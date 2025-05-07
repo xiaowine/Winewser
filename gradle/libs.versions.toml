@@ -7,9 +7,7 @@ activityCompose = "1.10.1"
 composeBom = "2025.04.01"
 miuixAndroid = "0.4.2"
 androidx-navigation-compose = "2.8.9"
-mmkv = "2.2.1"
 roomRuntime = "2.7.1"
-serialize = "3.0.1"
 
 [libraries]
 
@@ -27,8 +25,6 @@ androidx-foundation = { group = "androidx.compose.foundation", name = "foundatio
 androidx-animation = { group = "androidx.compose.animation", name = "animation" }
 miuix-android = { module = "top.yukonga.miuix.kmp:miuix-android", version.ref = "miuixAndroid" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "androidx-navigation-compose" }
-mmkv = { module = "com.tencent:mmkv", version.ref = "mmkv" }
-serialize = { module = "com.github.liangjingkanji:Serialize", version.ref = "serialize" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

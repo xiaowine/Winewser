@@ -4,33 +4,29 @@ import android.app.Application
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.room.Room
-import com.xiaowine.winebrowser.database.AppDatabase
-import com.xiaowine.winebrowser.entity.SearchHistoryEntity
+import com.xiaowine.winebrowser.data.entity.SearchHistoryEntity
+import com.xiaowine.winebrowser.utils.Utils.getDB
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class ViewModel(application: Application) : AndroidViewModel(application) {
-    private val db = Room.databaseBuilder(
-        application, AppDatabase::class.java, "database-name"
-    ).build()
+class SearchHistoryViewModel(application: Application) : AndroidViewModel(application) {
+    private val db =  getDB(application)
 
-    // 使用 MutableState 替代 LiveData
+
     val historyList = mutableStateOf<List<SearchHistoryEntity>>(emptyList())
 
     init {
-        // 初始化时加载历史记录
-        refreshHistoryList()
-    }
-
-    // 刷新历史记录列表
-    fun refreshHistoryList() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val history = db.historyData().getAll()
-            historyList.value = history
+        // 使用 Flow 订阅数据变化
+        viewModelScope.launch {
+            db.historyData().getAll().collectLatest { history ->
+                historyList.value = history
+            }
         }
     }
 
+    // 不再需要手动刷新方法
+    // 删除 refreshHistoryList() 方法
     fun addSearchHistory(query: String) {
         viewModelScope.launch(Dispatchers.IO) {
             // 检查是否已存在相同内容
@@ -41,18 +37,14 @@ class ViewModel(application: Application) : AndroidViewModel(application) {
             }
             // 插入新记录
             db.historyData().insert(SearchHistoryEntity(content = query))
-            
-            // 刷新历史记录列表
-            refreshHistoryList()
+            // Flow 会自动通知数据变化，不需要手动刷新
         }
     }
 
     fun clearOutdatedHistory(keepCount: Int = 20) {
         viewModelScope.launch(Dispatchers.IO) {
             db.historyData().deleteOldEntries(keepCount)
-            
-            // 刷新历史记录列表
-            refreshHistoryList()
+            // Flow 会自动通知数据变化，不需要手动刷新
         }
     }
 }

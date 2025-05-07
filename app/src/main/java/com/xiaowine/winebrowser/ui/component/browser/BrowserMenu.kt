@@ -1,5 +1,6 @@
 package com.xiaowine.winebrowser.ui.component.browser
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -38,6 +39,12 @@ fun BrowserMenu(
 ) {
 
     val pagerState = rememberPagerState(pageCount = { 3 })
+
+    BackHandler(
+        enabled = isMenuState.value
+    ) {
+        isMenuState.value = false
+    }
 
     AnimatedVisibility(
         visible = isMenuState.value,
@@ -125,7 +132,7 @@ fun BrowserMenu(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(bottom = 5.dp)
+                    .padding(bottom = 15.dp)
                     .padding(horizontal = 30.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically,

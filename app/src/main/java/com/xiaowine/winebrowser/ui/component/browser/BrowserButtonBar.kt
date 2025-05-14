@@ -32,8 +32,9 @@ fun BrowserButtonBar(
     webViewState: MutableState<WebView?>,
     webViewUrlState: MutableState<String>,
     isMenuState: MutableState<Boolean>,
+    isTabMenuState: MutableState<Boolean>,
     onCreateNewWebView: () -> Unit = {},
-    tabCount: Int = 1
+    tabCount: Int = 1,
 ) {
     Row(
         modifier = modifier
@@ -87,6 +88,12 @@ fun BrowserButtonBar(
                                 // 新建webview标签页
                                 onCreateNewWebView()
                             }
+
+                            3 -> {
+                                // 显示标签页列表
+                                isTabMenuState.value = !isTabMenuState.value
+                            }
+
                             4 -> {
                                 isMenuState.value = !isMenuState.value
                             }

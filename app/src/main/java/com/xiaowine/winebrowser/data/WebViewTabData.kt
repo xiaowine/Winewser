@@ -15,6 +15,7 @@ import java.util.UUID
  * @property icon 页面图标
  * @property themeColor 主题颜色
  * @property progress 页面加载进度（0-100）
+ * @property thumbnail 标签页缩略图，在需要时临时存储
  */
 data class WebViewTabData(
     val id: String = UUID.randomUUID().toString(),
@@ -23,5 +24,6 @@ data class WebViewTabData(
     var title: String = "",
     var icon: Bitmap? = null,
     var themeColor: Int = Color.WHITE,
-    var progress: Int = 0
+    var progress: Int = 0,
+    var thumbnail: Bitmap? = null
 )

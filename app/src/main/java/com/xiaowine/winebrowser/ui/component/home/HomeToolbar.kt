@@ -1,4 +1,5 @@
 package com.xiaowine.winebrowser.ui.component.home
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -27,36 +28,26 @@ fun HomeToolbar(
         cornerRadius = 20.dp
     ) {
         Row {
-            val iconsList = listOf(
-                AddIcon,
-                MenuIcon,
-            )
-            iconsList.forEachIndexed { i, it ->
-                Box(
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 8.dp)
+                    .size(28.dp)
+                    .clickable(
+                        interactionSource = null,
+                        indication = null
+                    ) {
+                        isMenuState.value = !isMenuState.value
+                    },
+            ) {
+                Icon(
                     modifier = Modifier
-                        .padding(horizontal = 8.dp)
-                        .size(28.dp)
-                        .clickable(
-                            interactionSource = null,
-                            indication = null
-                        ) {
-                            when (i) {
-                                0 -> {}
-                                1 -> {
-                                    isMenuState.value = !isMenuState.value
-                                }
-                            }
-                        },
-                ) {
-                    Icon(
-                        modifier = Modifier
-                            .fillMaxSize(),
-                        imageVector = it,
-                        contentDescription = "Navigation action",
-                        tint = MiuixTheme.colorScheme.onSurface
-                    )
-                }
+                        .fillMaxSize(),
+                    imageVector = MenuIcon,
+                    contentDescription = "Navigation action",
+                    tint = MiuixTheme.colorScheme.onSurface
+                )
             }
+
         }
     }
 }

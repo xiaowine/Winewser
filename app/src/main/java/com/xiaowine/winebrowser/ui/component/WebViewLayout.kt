@@ -8,6 +8,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -16,6 +17,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.xiaowine.winebrowser.BuildConfig
 import com.xiaowine.winebrowser.utils.Utils
 import com.xiaowine.winebrowser.webview.WinewserWebChromeClient
@@ -30,10 +34,28 @@ fun WebViewLayout(
     onIconChange: (Bitmap) -> Unit,
     onPageStarted: (String) -> Unit,
     onPageColorChange: (Int) -> Unit,
-    webViewState: MutableState<WebView?>,
+    onWebViewCreated: (WebView) -> Unit = {},
+    webViewState: MutableState<WebView?>? = null,
     isVisible: Boolean = true
 ) {
     var webView: WebView? by remember { mutableStateOf(null) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // 处理生命周期事件
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_PAUSE) {
+                webView?.onPause()
+            } else if (event == Lifecycle.Event.ON_RESUME) {
+                webView?.onResume()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            webView?.destroy()
+        }
+    }
 
     if (Utils.isPreview) return
 
@@ -79,21 +101,34 @@ fun WebViewLayout(
                 // 配置 Cookie
                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
 
-                // 更新状态
-                webViewState.value = this
+                // 更新状态并调用回调
                 webView = this
+                webViewState?.value = this
+                onWebViewCreated(this)
             }
         },
         update = { updatedWebView ->
             // 根据 isVisible 参数控制 WebView 可见性
             updatedWebView.visibility = if (isVisible) ViewGroup.VISIBLE else ViewGroup.GONE
-            webView = updatedWebView
-        },
-        onRelease = { releasedWebView ->
-            // WebView 销毁时的清理工作
-            releasedWebView.destroy()
-            webView = null
-            onTitleChange("")
+
+            // 如果WebView实例不同，更新状态
+            if (webView != updatedWebView) {
+                webView = updatedWebView
+                webViewState?.value = updatedWebView
+                onWebViewCreated(updatedWebView)
+            }
         }
     )
+
+    // 处理WebView的销毁
+    DisposableEffect(Unit) {
+        onDispose {
+            webView?.let { wv ->
+                wv.stopLoading()
+                wv.destroy()
+                webView = null
+                webViewState?.value = null
+            }
+        }
+    }
 }

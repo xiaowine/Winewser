@@ -1,14 +1,14 @@
 package com.xiaowine.winebrowser
 
+import android.webkit.WebView
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -17,15 +17,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.xiaowine.winebrowser.utils.Utils
 import com.xiaowine.winebrowser.ui.appDarkColorScheme
 import com.xiaowine.winebrowser.ui.appLightColorScheme
 import com.xiaowine.winebrowser.ui.pages.BrowserPage
 import com.xiaowine.winebrowser.ui.pages.HomePage
 import com.xiaowine.winebrowser.ui.theme.AppTheme
+import com.xiaowine.winebrowser.utils.Utils
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
-import android.webkit.WebView
 
 @Composable
 fun App(
@@ -71,9 +70,9 @@ fun App(
 // 修改 pageDestinations，传递 isSearchState
 fun NavGraphBuilder.pageDestinations(
     navController: NavHostController,
-    isSearchState: androidx.compose.runtime.MutableState<Boolean>,
-    webViewUrlState: androidx.compose.runtime.MutableState<String>,
-    webViewState: androidx.compose.runtime.MutableState<WebView?>
+    isSearchState: MutableState<Boolean>,
+    webViewUrlState: MutableState<String>,
+    webViewState: MutableState<WebView?>
 ) {
     composable("home") { HomePage(navController) }
     composable(

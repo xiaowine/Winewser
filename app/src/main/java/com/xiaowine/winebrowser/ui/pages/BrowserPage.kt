@@ -19,13 +19,16 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -43,23 +46,12 @@ import com.xiaowine.winebrowser.ui.component.browser.BrowserMenu
 import com.xiaowine.winebrowser.ui.component.browser.BrowserNowSiteInfo
 import com.xiaowine.winebrowser.ui.component.browser.BrowserSearchField
 import com.xiaowine.winebrowser.ui.component.browser.BrowserSearchHistoryPanel
+import com.xiaowine.winebrowser.data.WebViewTabData
+import com.xiaowine.winebrowser.data.entity.SearchHistoryEntity
 import com.xiaowine.winebrowser.utils.Utils.isColorSimilar
 import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-
-//@Composable
-//@Preview(showSystemUi = true, device = "spec:parent=pixel_fold")
-//@Preview(showSystemUi = true)
-//@Preview(
-//    showSystemUi = true,
-//    uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES or android.content.res.Configuration.UI_MODE_TYPE_NORMAL
-//)
-//fun TestBrowser() {
-//    MiuixTheme {
-//        App("browser?url=&isSearch=true")
-//    }
-//}
 
 @Composable
 fun BrowserPage(
@@ -70,54 +62,48 @@ fun BrowserPage(
 ) {
     // 状态管理
     val focusManager = LocalFocusManager.current
-
     val searchHistoryViewModel = viewModel<SearchHistoryViewModel>()
-
     val historyList = searchHistoryViewModel.historyList.value
 
-
-    var siteTitleState = remember { mutableStateOf("") }
-    var siteIconState = remember { mutableStateOf<Bitmap?>(null) }
-    var siteColorState = remember { mutableIntStateOf(android.graphics.Color.WHITE) }
-
-    var searchText = remember { mutableStateOf(TextFieldValue("")) }
+    // 标签页状态
+    val tabs = remember { mutableStateListOf<WebViewTabData>() }
+    val currentTabIndex = remember { mutableIntStateOf(0) }
+    val searchText = remember { mutableStateOf(TextFieldValue("")) }
     val focusRequester = remember { FocusRequester() }
-    var isMenuState = rememberSaveable { mutableStateOf(false) }
-    var progress = remember { mutableIntStateOf(0) }
+    val isMenuState = rememberSaveable { mutableStateOf(false) }
     var isFieldFocused by remember { mutableStateOf(false) }
     var urlFromSearch by remember { mutableStateOf(false) }
+    val initialUrlLoaded = remember { mutableStateOf(false) }
 
-    // 监听WebView实例和URL变化，确保URL正确加载
-    LaunchedEffect(webViewUrlState.value) {
-        if (isSearchState.value) return@LaunchedEffect
-        val webView = webViewState.value
-        val url = webViewUrlState.value
+    // 当前标签页状态
+    val currentTabProgressState = remember { mutableIntStateOf(0) }
+    val currentTabIconState = remember { mutableStateOf<Bitmap?>(null) }
 
-        if (webView != null && url.isNotEmpty()) {
-            Log.d("Browser", "Loading URL: $url")
-            webView.loadUrl(url)
-            siteTitleState.value = "正在加载中..."
-            siteIconState.value = null
+    // 主题颜色
+    val themeColor = MiuixTheme.colorScheme.background
+
+    // 初始化第一个标签页
+    if (tabs.isEmpty() && webViewUrlState.value.isNotEmpty()) {
+        tabs.add(WebViewTabData(url = webViewUrlState.value))
+        initialUrlLoaded.value = true
+    }
+
+    // 当前标签页
+    val currentTab = if (tabs.isNotEmpty() && currentTabIndex.intValue < tabs.size) {
+        tabs[currentTabIndex.intValue]
+    } else {
+        WebViewTabData()
+    }
+
+    // 进度条显示逻辑
+    val shouldShowProgress by remember(currentTabProgressState.intValue, isSearchState.value) {
+        derivedStateOf {
+            currentTabProgressState.intValue in 1..99 && !isSearchState.value
         }
     }
 
-    // 更新搜索框显示的标题
-    LaunchedEffect(siteTitleState.value) {
-        searchText.value = TextFieldValue(siteTitleState.value)
-    }
-
-    LaunchedEffect(isSearchState.value) {
-        if (isSearchState.value) {
-            focusRequester.requestFocus()
-            searchText.value = TextFieldValue("")
-        } else {
-            searchText.value = TextFieldValue(siteTitleState.value)
-        }
-    }
-
-    val color = MiuixTheme.colorScheme.background
-    // 执行搜索或导航的 Lambda 函数
-    val performSearchOrNavigate: (String) -> Unit = { query ->
+    // 功能：执行搜索或导航
+    val performSearchOrNavigate = { query: String ->
         val trimmedQuery = query.trim()
         if (trimmedQuery.isNotEmpty()) {
             // 确定最终加载的URL
@@ -127,9 +113,8 @@ fun BrowserPage(
                 "https://cn.bing.com/search?q=${Uri.encode(trimmedQuery)}"
             }
 
-            // 添加到搜索历史记录并刷新列表
+            // 添加到搜索历史记录并管理历史记录
             searchHistoryViewModel.addSearchHistory(trimmedQuery)
-            // 清理旧记录，保留最新的20条
             searchHistoryViewModel.clearOutdatedHistory(20)
 
             // 隐藏键盘，更新状态并加载URL
@@ -140,172 +125,182 @@ fun BrowserPage(
         }
     }
 
+    // 功能：创建新标签页
+    val createNewTab = {
+        tabs.add(WebViewTabData())
+        currentTabIndex.intValue = tabs.size - 1
+        isSearchState.value = true // 新标签页自动进入搜索状态
+        initialUrlLoaded.value = false // 重置初始URL加载状态
+    }
+
+    // 效果：当标签页切换时，更新WebView状态
+    LaunchedEffect(currentTabIndex.intValue) {
+        if (tabs.isNotEmpty() && currentTabIndex.intValue < tabs.size) {
+            webViewState.value = currentTab.webView
+            webViewUrlState.value = currentTab.url
+        }
+    }
+
+    // 效果：监听WebViewUrlState的变化，更新当前标签的URL
+    LaunchedEffect(webViewUrlState.value) {
+        if (currentTabIndex.intValue < tabs.size) {
+            tabs[currentTabIndex.intValue].url = webViewUrlState.value
+        }
+    }
+
+    // 效果：监听WebView实例和URL变化，确保URL正确加载
+    LaunchedEffect(webViewUrlState.value, webViewState.value) {
+        if (isSearchState.value) return@LaunchedEffect
+
+        val webView = webViewState.value
+        val url = webViewUrlState.value
+
+        if (webView != null && url.isNotEmpty()) {
+            Log.d("Browser", "Loading URL: $url")
+            webView.loadUrl(url)
+            currentTab.title = "正在加载中..."
+            currentTab.icon = null
+            initialUrlLoaded.value = true
+        }
+    }
+
+    // 效果：更新搜索框显示的标题
+    LaunchedEffect(currentTab.title) {
+        if (!isSearchState.value) {
+            searchText.value = TextFieldValue(currentTab.title)
+        }
+    }
+
+    // 效果：搜索状态变化时更新搜索框
+    LaunchedEffect(isSearchState.value) {
+        if (isSearchState.value) {
+            focusRequester.requestFocus()
+            searchText.value = TextFieldValue("")
+        } else {
+            searchText.value = TextFieldValue(currentTab.title)
+        }
+    }
+
     // 处理返回键逻辑
     BackHandler {
-        if (isFieldFocused) {
-            focusManager.clearFocus()
-        }
-        if (siteTitleState.value.isEmpty()) {
-            navController.navigate("home") {
-                popUpTo(0) { inclusive = false }
-            }
-            return@BackHandler
-        }
-        if (isSearchState.value) {
-            isSearchState.value = false
-        } else {
-            val webView = webViewState.value
-            if (webView?.canGoBack() == true) {
-                webView.goBack()
-            } else {
-                navController.navigate("home") {
-                    popUpTo(0) { inclusive = false }
-                }
-            }
-        }
-
+        handleBackPress(
+            isFieldFocused = isFieldFocused,
+            focusManager = focusManager,
+            isSearchState = isSearchState,
+            webViewState = webViewState,
+            currentTab = currentTab,
+            tabs = tabs,
+            currentTabIndex = currentTabIndex,
+            navController = navController
+        )
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        Scaffold(
-            topBar = {
-                // 搜索栏
-                BrowserSearchField(
-                    modifier = Modifier
-                        .background(
-                            if (isSearchState.value || isSystemInDarkTheme())
-                                MiuixTheme.colorScheme.background
-                            else
-                                Color(siteColorState.intValue)
-                        )
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp)
-                        .padding(vertical = 6.dp)
-                        .onFocusChanged { focusState ->
-                            isFieldFocused = focusState.isFocused
-                            if (focusState.isFocused) {
-                                isSearchState.value = true
-                            }
-                        },
-                    searchText = searchText.value,
-                    focusRequester = focusRequester,
-                    onValueChange = {
-                        searchText.value = it
-                    },
-                    onSearch = { performSearchOrNavigate(searchText.value.text) },
-                    webViewState = webViewState,
-                    isSearchState = isSearchState,
-                    siteIconState = siteIconState,
-                    isLoading = { progress.intValue != 100 }
-                )
-
-                // 加载进度条
-                if (progress.intValue != 100 && !isSearchState.value) {
-                    LinearProgressIndicator(progress = progress.intValue / 100f)
-                }
-            },
-            content = { paddingValues ->
-                // 添加一个全屏点击监听器作为最底层
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable(
-                            interactionSource = null,
-                            indication = null
-                        ) {
-                            if (isFieldFocused) {
-                                focusManager.clearFocus()
-                            }
+    // 主界面搭建
+    Scaffold(
+        topBar = {
+            // 顶部搜索栏
+            BrowserSearchField(
+                modifier = Modifier
+                    .background(
+                        if (isSearchState.value || isSystemInDarkTheme())
+                            MiuixTheme.colorScheme.background
+                        else
+                            Color(currentTab.themeColor)
+                    )
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp)
+                    .padding(vertical = 6.dp)
+                    .onFocusChanged { focusState ->
+                        isFieldFocused = focusState.isFocused
+                        if (focusState.isFocused) {
+                            isSearchState.value = true
                         }
-                        .padding(paddingValues)
-                ) {
-                    // 搜索状态下显示历史记录，使用Box包裹以防止点击事件穿透
-                    if (isSearchState.value) {
+                    },
+                searchText = searchText.value,
+                focusRequester = focusRequester,
+                onValueChange = {
+                    searchText.value = it
+                },
+                onSearch = { performSearchOrNavigate(searchText.value.text) },
+                webViewState = webViewState,
+                isSearchState = isSearchState,
+                siteIconState = currentTabIconState,
+                isLoading = { currentTab.progress in 1..99 }
+            )
 
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(MiuixTheme.colorScheme.background)
-                                .padding(horizontal = 5.dp)
-                        ) {
-                            if (siteTitleState.value.isNotEmpty()) {
-                                BrowserNowSiteInfo(
-                                    modifier = Modifier
-                                        .padding(horizontal = 16.dp)
-                                        .padding(top = 16.dp)
-                                        .padding(bottom = 10.dp),
-                                    urlState = webViewUrlState,
-                                    titleState = siteTitleState,
-                                    searchText = searchText,
-                                )
-                            }
-                            BrowserSearchHistoryPanel(
-                                modifier = Modifier.fillMaxSize(),
-                                historyList = historyList,
-                                onSelected = { performSearchOrNavigate(it) }
-                            )
+            // 进度条
+            if (shouldShowProgress) {
+                LinearProgressIndicator(
+                    progress = currentTabProgressState.intValue / 100f
+                )
+            }
+        },
+        content = { paddingValues ->
+            // 添加一个全屏点击监听器作为最底层
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = null,
+                        indication = null
+                    ) {
+                        if (isFieldFocused) {
+                            focusManager.clearFocus()
                         }
                     }
-                    WebViewLayout(
-                        modifier = Modifier.fillMaxSize(),
-                        onTitleChange = { siteTitleState.value = it },
-                        onIconChange = {
-                            siteIconState.value = it
-                        },
-                        onPageStarted = { loadedUrl ->
-                            println("onPageStarted")
-                            if (loadedUrl.isNotEmpty() && loadedUrl != webViewUrlState.value && !urlFromSearch) {
-                                webViewUrlState.value = loadedUrl
-                            } else {
-                                urlFromSearch = false
-                            }
-                        },
-                        onPageColorChange = {
-                            println("onPageColorChange")
-                            val themeColor = color.value.toInt()
-                            if (it == -1) siteColorState.intValue = themeColor
-                            val similar = isColorSimilar(Color(it), color)
-                            if (similar) {
-                                siteColorState.intValue = themeColor
-                            } else {
-                                siteColorState.intValue = it
-                            }
-//                            siteColorState.intValue = it
-                        },
-                        onProgressChanged = { progress.intValue = it },
-                        webViewState = webViewState,
-                        isVisible = !isSearchState.value
+                    .padding(paddingValues)
+            ) {
+                // 搜索状态下显示历史记录
+                if (isSearchState.value) {
+                    RenderSearchHistoryPanel(
+                        currentTab = currentTab,
+                        historyList = historyList,
+                        searchText = searchText,
+                        performSearchOrNavigate = performSearchOrNavigate
                     )
                 }
-            },
-            bottomBar = {
-                // 非搜索状态下显示底部导航栏
-                if (!isSearchState.value) {
-                    BrowserButtonBar(
-                        modifier = Modifier
-                            .background(
-                                if (isSystemInDarkTheme())
-                                    MiuixTheme.colorScheme.background
-                                else
-                                    Color(siteColorState.intValue)
-                            ),
-                        navController = navController,
-                        webViewState = webViewState,
-                        webViewUrlState = webViewUrlState,
-                        isMenuState = isMenuState
-                    )
-                }
-            },
-        )
-        BrowserMenu(isMenuState)
-    }
 
-    AnimatedVisibility(
-        visible = BuildConfig.DEBUG
-    ) {
+                // 为每个标签页创建WebView
+                RenderTabWebViews(
+                    tabs = tabs,
+                    currentTabIndex = currentTabIndex.intValue,
+                    isSearchState = isSearchState.value,
+                    webViewState = webViewState,
+                    webViewUrlState = webViewUrlState,
+                    currentTabIconState = currentTabIconState,
+                    currentTabProgressState = currentTabProgressState,
+                    searchText = searchText,
+                    themeColor = themeColor
+                )
+            }
+        },
+        bottomBar = {
+            // 非搜索状态下显示底部导航栏
+            if (!isSearchState.value) {
+                BrowserButtonBar(
+                    modifier = Modifier
+                        .background(
+                            if (isSystemInDarkTheme())
+                                MiuixTheme.colorScheme.background
+                            else
+                                Color(currentTab.themeColor)
+                        ),
+                    navController = navController,
+                    webViewState = webViewState,
+                    webViewUrlState = webViewUrlState,
+                    isMenuState = isMenuState,
+                    onCreateNewWebView = createNewTab,
+                    tabCount = tabs.size
+                )
+            }
+        },
+    )
+
+    // 浏览器菜单
+    BrowserMenu(isMenuState)
+
+    // 调试模式下显示FPS监视器
+    AnimatedVisibility(visible = BuildConfig.DEBUG) {
         FPSMonitor(
             modifier = Modifier
                 .statusBarsPadding()
@@ -315,3 +310,160 @@ fun BrowserPage(
     }
 }
 
+/**
+ * 处理返回键逻辑
+ */
+private fun handleBackPress(
+    isFieldFocused: Boolean,
+    focusManager: FocusManager,
+    isSearchState: MutableState<Boolean>,
+    webViewState: MutableState<WebView?>,
+    currentTab: WebViewTabData,
+    tabs: MutableList<WebViewTabData>,
+    currentTabIndex: MutableState<Int>,
+    navController: NavController
+) {
+    // 处理焦点状态
+    if (isFieldFocused) {
+        focusManager.clearFocus()
+        return
+    }
+
+    // 空标题页面返回主页
+    if (currentTab.title.isEmpty()) {
+        navController.navigate("home") {
+            popUpTo(0) { inclusive = false }
+        }
+        return
+    }
+
+    // 处理搜索状态
+    if (isSearchState.value) {
+        isSearchState.value = false
+        return
+    }
+
+    // 处理网页返回
+    val webView = webViewState.value
+    if (webView?.canGoBack() == true) {
+        webView.goBack()
+        return
+    }
+
+    // 处理多标签页
+    if (tabs.size > 1 && currentTabIndex.value > 0) {
+        // 移除当前标签页并切换到前一个
+        tabs.removeAt(currentTabIndex.value)
+        currentTabIndex.value -= 1
+    } else {
+        // 返回主页
+        navController.navigate("home") {
+            popUpTo(0) { inclusive = false }
+        }
+    }
+}
+
+/**
+ * 渲染搜索历史面板
+ */
+@Composable
+private fun RenderSearchHistoryPanel(
+    currentTab: WebViewTabData,
+    historyList: List<SearchHistoryEntity>,
+    searchText: MutableState<TextFieldValue>,
+    performSearchOrNavigate: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MiuixTheme.colorScheme.background)
+            .padding(horizontal = 5.dp)
+    ) {
+        // 显示当前站点信息（如果有）
+        if (currentTab.title.isNotEmpty()) {
+            BrowserNowSiteInfo(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 16.dp)
+                    .padding(bottom = 10.dp),
+                urlState = remember { mutableStateOf(currentTab.url) },
+                titleState = remember { mutableStateOf(currentTab.title) },
+                searchText = searchText,
+            )
+        }
+
+        // 搜索历史面板
+        BrowserSearchHistoryPanel(
+            modifier = Modifier.fillMaxSize(),
+            historyList = historyList,
+            onSelected = performSearchOrNavigate
+        )
+    }
+}
+
+/**
+ * 渲染所有标签页的WebView
+ */
+@Composable
+private fun RenderTabWebViews(
+    tabs: List<WebViewTabData>,
+    currentTabIndex: Int,
+    isSearchState: Boolean,
+    webViewState: MutableState<WebView?>,
+    webViewUrlState: MutableState<String>,
+    currentTabIconState: MutableState<Bitmap?>,
+    currentTabProgressState: MutableState<Int>,
+    searchText: MutableState<TextFieldValue>,
+    themeColor: Color
+) {
+    tabs.forEachIndexed { index, tab ->
+        val isVisible = index == currentTabIndex && !isSearchState
+        WebViewLayout(
+            modifier = Modifier.fillMaxSize(),
+            onTitleChange = { newTitle ->
+                tab.title = newTitle
+                if (index == currentTabIndex) {
+                    searchText.value = TextFieldValue(newTitle)
+                }
+            },
+            onIconChange = { newIcon ->
+                tab.icon = newIcon
+                if (index == currentTabIndex) {
+                    currentTabIconState.value = newIcon
+                }
+            },
+            onPageStarted = { loadedUrl ->
+                if (loadedUrl.isNotEmpty() && index == currentTabIndex) {
+                    webViewUrlState.value = loadedUrl
+                    tab.url = loadedUrl
+                }
+            },
+            onPageColorChange = { newColor ->
+                val defaultColor = themeColor.value.toInt()
+                if (newColor == -1) {
+                    tab.themeColor = defaultColor
+                    return@WebViewLayout
+                }
+
+                tab.themeColor = if (isColorSimilar(Color(newColor), themeColor)) {
+                    defaultColor
+                } else {
+                    newColor
+                }
+            },
+            onProgressChanged = { newProgress ->
+                tab.progress = newProgress
+                if (index == currentTabIndex) {
+                    currentTabProgressState.value = newProgress
+                }
+            },
+            onWebViewCreated = { webView ->
+                tab.webView = webView
+                if (index == currentTabIndex) {
+                    webViewState.value = webView
+                }
+            },
+            isVisible = isVisible
+        )
+    }
+}

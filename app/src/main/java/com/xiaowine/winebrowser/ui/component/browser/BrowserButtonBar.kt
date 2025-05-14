@@ -32,6 +32,8 @@ fun BrowserButtonBar(
     webViewState: MutableState<WebView?>,
     webViewUrlState: MutableState<String>,
     isMenuState: MutableState<Boolean>,
+    onCreateNewWebView: () -> Unit = {},
+    tabCount: Int = 1
 ) {
     Row(
         modifier = modifier
@@ -81,6 +83,10 @@ fun BrowserButtonBar(
                                 webView?.goForward()
                             }
 
+                            2 -> {
+                                // 新建webview标签页
+                                onCreateNewWebView()
+                            }
                             4 -> {
                                 isMenuState.value = !isMenuState.value
                             }
@@ -92,7 +98,7 @@ fun BrowserButtonBar(
             ) {
                 if (i == 3) {
                     BrowserTabCountBadge(
-                        count = 1,
+                        count = tabCount,
                         modifier = Modifier
                             .size(32.dp)
                             .padding(4.dp)
@@ -117,4 +123,3 @@ fun BrowserButtonBar(
         }
     }
 }
-

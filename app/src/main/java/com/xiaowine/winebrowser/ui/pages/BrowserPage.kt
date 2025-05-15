@@ -3,8 +3,6 @@ package com.xiaowine.winebrowser.ui.pages
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.net.Uri
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.util.Patterns
 import android.webkit.WebView
@@ -41,7 +39,6 @@ import androidx.core.graphics.createBitmap
 import androidx.core.view.isVisible
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.xiaowine.winebrowser.BuildConfig
 import com.xiaowine.winebrowser.data.WebViewTabData
 import com.xiaowine.winebrowser.data.entity.SearchHistoryEntity
 import com.xiaowine.winebrowser.model.SearchHistoryViewModel
@@ -78,7 +75,6 @@ fun BrowserPage(
     val searchHistoryViewModel = viewModel<SearchHistoryViewModel>()
     val historyList = searchHistoryViewModel.historyList.value
     val coroutineScope = rememberCoroutineScope()
-    val uiHandler = remember { Handler(Looper.getMainLooper()) }
     val focusRequester = remember { FocusRequester() }
 
     // 界面状态 - 可合并为一个对象的状态放在一起
@@ -445,7 +441,6 @@ fun BrowserPage(
                     searchText = uiState.searchText,
                     themeColor = themeColor,
                     webViewReady = loadState.isWebViewReady,
-                    uiHandler = uiHandler,
                     coroutineScope = coroutineScope
                 )
             }
@@ -487,7 +482,7 @@ fun BrowserPage(
     )
 
     // 调试模式下显示FPS监视器
-    AnimatedVisibility(visible = BuildConfig.DEBUG) {
+    AnimatedVisibility(visible = true) {
         FPSMonitor(
             modifier = Modifier
                 .statusBarsPadding()
@@ -592,7 +587,7 @@ private fun captureWebViewSnapshot(tab: WebViewTabData, coroutineScope: Coroutin
                 }
 
                 // 创建适当大小的缩略图
-                val scale = 0.5f // 缩小比例以提高性能
+                val scale = 0.25f // 缩小比例以提高性能
                 val width = (webView.width * scale).toInt().coerceAtLeast(1)
                 val height = (webView.height * scale).toInt().coerceAtLeast(1)
 
@@ -668,7 +663,6 @@ private fun RenderTabWebViews(
     searchText: MutableState<TextFieldValue>,
     themeColor: Color,
     webViewReady: MutableState<Boolean>,
-    uiHandler: Handler,
     coroutineScope: CoroutineScope
 ) {
     tabs.forEachIndexed { index, tab ->
@@ -679,11 +673,6 @@ private fun RenderTabWebViews(
                 tab.title = newTitle
                 if (index == currentTabIndex) {
                     searchText.value = TextFieldValue(newTitle)
-
-                    // 当标题变更时更新标签页预览图（表示页面内容已加载）
-                    uiHandler.postDelayed({
-                        captureWebViewSnapshot(tab, coroutineScope)
-                    }, 500) // 延迟半秒，确保页面渲染完成
                 }
             },
             onIconChange = { newIcon ->
@@ -721,9 +710,7 @@ private fun RenderTabWebViews(
 
                     // 当页面加载完成时（100%）自动截图
                     if (newProgress == 100) {
-                        uiHandler.postDelayed({
-                            captureWebViewSnapshot(tab, coroutineScope)
-                        }, 300) // 延迟300ms确保页面渲染完成
+                        captureWebViewSnapshot(tab, coroutineScope)
                     }
                 }
             },
@@ -733,7 +720,6 @@ private fun RenderTabWebViews(
                     webViewState.value = webView
                     // 标记WebView已准备好
                     webViewReady.value = true
-                    Log.d("Browser", "WebView已准备好，可以加载URL了")
                 }
             },
             isVisible = isVisible

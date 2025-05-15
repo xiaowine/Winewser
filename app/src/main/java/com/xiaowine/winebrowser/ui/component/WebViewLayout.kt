@@ -2,7 +2,6 @@ package com.xiaowine.winebrowser.ui.component
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
-import android.util.Log
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebSettings
@@ -10,7 +9,6 @@ import android.webkit.WebView
 import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,7 +41,6 @@ fun WebViewLayout(
     var webView: WebView? by remember { mutableStateOf(null) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val webViewInitialized = remember { mutableStateOf(false) }
-    val instanceId = remember { System.currentTimeMillis().toString() }
 
     // 处理生命周期事件
     DisposableEffect(lifecycleOwner) {
@@ -60,21 +57,13 @@ fun WebViewLayout(
         }
     }
 
-    // 确保WebView初始化完成后调用onWebViewCreated
-    LaunchedEffect(webViewInitialized.value) {
-        if (webViewInitialized.value && webView != null) {
-            Log.d("WebViewLayout", "WebView [$instanceId] 初始化完成，通知创建完毕")
-        }
-    }
-
     if (Utils.isPreview) return
 
     AndroidView(
         modifier = modifier.background(Color.Transparent),
         factory = { ctx ->
-            Log.d("WebViewLayout", "创建新的WebView实例 [$instanceId]")
             WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
-            
+
             WebView(ctx).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -105,7 +94,7 @@ fun WebViewLayout(
                     // 缓存设置以提高页面恢复速度
                     cacheMode = WebSettings.LOAD_DEFAULT
                     databaseEnabled = true
-                    
+
                     // 优化加载速度
                     loadsImagesAutomatically = true
                 }
@@ -113,18 +102,18 @@ fun WebViewLayout(
                 // 设置 WebView 客户端
                 webChromeClient = WinewserWebChromeClient(
                     onTitleChange = { title ->
-                        Log.d("WebViewLayout", "[$instanceId] 标题变更: $title")
+//                        Log.d("WebViewLayout", "[$instanceId] 标题变更: $title")
                         onTitleChange(title)
-                    }, 
-                    onIconChange = onIconChange, 
+                    },
+                    onIconChange = onIconChange,
                     onProgressChanged = { progress ->
-                        Log.d("WebViewLayout", "[$instanceId] 进度变更: $progress")
+//                        Log.d("WebViewLayout", "[$instanceId] 进度变更: $progress")
                         onProgressChanged(progress)
                     }
                 )
                 webViewClient = WinewserWebViewClient(
                     onPageStarted = { url ->
-                        Log.d("WebViewLayout", "[$instanceId] 页面加载开始: $url")
+//                        Log.d("WebViewLayout", "[$instanceId] 页面加载开始: $url")
                         onPageStarted(url)
                     },
                     onPageColorChange = onPageColorChange
@@ -134,28 +123,26 @@ fun WebViewLayout(
                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
 
                 // 确保WebView完全初始化
-                postDelayed({
+                post {
                     // 标记WebView已初始化
                     webViewInitialized.value = true
-                    
+
                     // 更新状态并调用回调
                     webView = this
                     webViewState?.value = this
-                    
+
                     // 设置可见性
                     visibility = if (isVisible) ViewGroup.VISIBLE else ViewGroup.GONE
-                    
-                    Log.d("WebViewLayout", "WebView [$instanceId] 初始化完成并回调")
+
                     onWebViewCreated(this)
-                }, 50) // 给WebView一点时间初始化
+                } // 给WebView一点时间初始化
             }
         },
         update = { updatedWebView ->
             // 已存在WebView实例，只需更新可见性
             if (webViewInitialized.value) {
-                Log.d("WebViewLayout", "更新WebView [$instanceId] 可见性: $isVisible")
                 updatedWebView.visibility = if (isVisible) ViewGroup.VISIBLE else ViewGroup.GONE
-                
+
                 // 确保webViewState中的值是最新的
                 webViewState?.value = updatedWebView
             }
@@ -168,12 +155,8 @@ fun WebViewLayout(
             // 注意：我们不会销毁WebView，只是停止其加载，保持其状态
             webView?.let { wv ->
                 if (!isVisible) {
-                    Log.d("WebViewLayout", "停止加载 WebView [$instanceId]")
                     wv.stopLoading() // 如果当前不可见，可以停止加载
                 }
-                // 不在此处销毁：wv.destroy()
-                // 不在此处设置webView = null
-                // 不在此处设置webViewState?.value = null
             }
         }
     }

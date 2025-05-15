@@ -1,10 +1,16 @@
 package com.xiaowine.winebrowser.ui.component.browser
 
 import android.graphics.Canvas
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -25,20 +32,28 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import androidx.core.graphics.createBitmap
 import androidx.core.view.isVisible
 import com.xiaowine.winebrowser.data.WebViewTabData
@@ -54,6 +69,8 @@ import top.yukonga.miuix.kmp.icon.icons.useful.Back
 import top.yukonga.miuix.kmp.icon.icons.useful.Cut
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.SmoothRoundedCornerShape
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @Composable
 fun BrowserTab(
@@ -150,7 +167,7 @@ fun BrowserTab(
 
                 // 标签数量提示
                 Text(
-                    text = "共${listTab.size}个标签页",
+                    text = "共${listTab.size}个标签页，左右滑动标签可删除",  // 修改提示文本
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 12.sp,
                     modifier = Modifier.padding(bottom = 8.dp)
@@ -169,7 +186,7 @@ fun BrowserTab(
                     ) {
                         // 显示所有标签页
                         listTab.forEachIndexed { index, tab ->
-                            TabPreviewCard(
+                            DraggableTabPreviewCard(
                                 tab = tab,
                                 isSelected = index == currentTabIndex,
                                 onSelect = {
@@ -233,13 +250,32 @@ private suspend fun captureTabPreview(tab: WebViewTabData) {
     }
 }
 
+/**
+ * 可拖动的标签预览卡片，支持左右滑动删除功能
+ */
 @Composable
-private fun TabPreviewCard(
+private fun DraggableTabPreviewCard(
     tab: WebViewTabData,
     isSelected: Boolean,
     onSelect: () -> Unit,
     onClose: () -> Unit
 ) {
+    // 设置拖拽相关的状态
+    val coroutineScope = rememberCoroutineScope()
+    val offsetY = remember { Animatable(0f, Float.VectorConverter) }
+    val offsetX = remember { Animatable(0f, Float.VectorConverter) }
+    var isDragging by remember { mutableStateOf(false) }
+
+    // 计算水平拖拽进度用于动画效果
+    val dragProgress = (offsetX.value / 300f).coerceIn(-1f, 1f)
+
+    // 根据拖拽距离调整卡片的缩放和旋转
+    val scale by animateFloatAsState(
+        targetValue = if (isDragging) 0.95f - abs(dragProgress) * 0.1f else 1f,
+        animationSpec = SpringSpec(stiffness = Spring.StiffnessLow),
+        label = "scaleAnimation"
+    )
+
     // 使用16:9的长宽比，更符合一般网页内容的形状
     val aspectRatio = 9f / 16f
 
@@ -247,20 +283,64 @@ private fun TabPreviewCard(
         modifier = Modifier
             .width(170.dp)
             .aspectRatio(aspectRatio)
+            .zIndex(if (isDragging) 1f else 0f) // 添加zIndex以确保拖动时在最顶层显示
+            .offset { IntOffset(offsetX.value.roundToInt(), offsetY.value.roundToInt()) }
+            .scale(scale)
             .clip(SmoothRoundedCornerShape(12.dp))
             .background(MiuixTheme.colorScheme.surfaceVariant, SmoothRoundedCornerShape(12.dp))
-            .clickable(
-                indication = null,
-                interactionSource = null
-            ) { onSelect() }
+            // 添加拖拽手势
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDragStart = { isDragging = true },
+                    onDragEnd = {
+                        isDragging = false
+                        coroutineScope.launch {
+                            // 检查是否达到删除阈值（水平拖动超过150px）
+                            if (abs(offsetX.value) > 150f) {
+                                // 用动画将卡片移出屏幕，然后调用删除回调
+                                val targetX = if (offsetX.value > 0) 1000f else -1000f
+                                offsetX.animateTo(targetX)
+                                onClose()
+                            } else {
+                                // 未达到删除阈值，弹回原位
+                                offsetX.animateTo(0f)
+                                offsetY.animateTo(0f)
+                            }
+                        }
+                    },
+                    onDragCancel = {
+                        isDragging = false
+                        coroutineScope.launch {
+                            // 取消拖拽时弹回原位
+                            offsetX.animateTo(0f)
+                            offsetY.animateTo(0f)
+                        }
+                    },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        coroutineScope.launch {
+                            offsetX.snapTo(offsetX.value + dragAmount.x)
+                        }
+                    }
+                )
+            }
+            // 点击选择标签（只有在不处于拖拽状态时才响应点击）
+            .clickable(enabled = !isDragging) { onSelect() }
             .border(
                 width = if (isSelected) 2.dp else 0.dp,
                 color = if (isSelected) MiuixTheme.colorScheme.primary else Color.Transparent,
                 shape = SmoothRoundedCornerShape(12.dp)
             )
     ) {
-        // 标签内容区域
-        Column {
+        // 透明度根据拖拽距离变化，拖拽越远越透明
+        val alpha = (1f - abs(dragProgress) * 0.6f).coerceIn(0.4f, 1f)
+
+        // 卡片内容区域
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MiuixTheme.colorScheme.surfaceVariant.copy(alpha = alpha))
+        ) {
             // 缩略图区域
             Box(
                 modifier = Modifier
@@ -353,6 +433,59 @@ private fun TabPreviewCard(
                             .size(8.dp)
                             .background(MiuixTheme.colorScheme.primary, CircleShape)
                     )
+                }
+
+                // 拖拽提示指示器
+                if (abs(dragProgress) > 0.3f) {
+                    val deleteColor = if (dragProgress > 0) Color.Red else Color.Red // 可以左滑和右滑都是红色
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(deleteColor.copy(alpha = abs(dragProgress) * 0.3f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (abs(dragProgress) > 0.6f) {
+                            Text(
+                                text = "松开删除",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+
+//                    // 添加滑动方向指示图标
+//                    val arrowOffset = dragProgress * 30f // 箭头偏移量，随拖动距离变化
+//
+//                    Row(
+//                        modifier = Modifier.fillMaxSize(),
+//                        horizontalArrangement = if (dragProgress > 0) Arrangement.End else Arrangement.Start,
+//                        verticalAlignment = Alignment.CenterVertically
+//                    ) {
+//                        if (abs(dragProgress) > 0.4f) {
+//                            if (dragProgress < 0) {
+//                                Spacer(modifier = Modifier.width(16.dp + arrowOffset.dp))
+//                                Icon(
+//                                    imageVector = MiuixIcons.Useful.Back,
+//                                    contentDescription = "滑动删除",
+//                                    tint = Color.White,
+//                                    modifier = Modifier.size(24.dp)
+//                                )
+//                            } else {
+//                                Spacer(modifier = Modifier.weight(1f))
+//                                Icon(
+//                                    imageVector = MiuixIcons.Useful.Back,
+//                                    contentDescription = "滑动删除",
+//                                    tint = Color.White,
+//                                    modifier = Modifier
+//                                        .size(24.dp)
+//                                        .rotate(180f) // 旋转图标使箭头朝向相反方向
+//                                )
+//                                Spacer(modifier = Modifier.width(16.dp - arrowOffset.dp))
+//                            }
+//                        }
+//                    }
                 }
             }
 

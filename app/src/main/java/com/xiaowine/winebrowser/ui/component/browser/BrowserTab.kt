@@ -1,8 +1,6 @@
 package com.xiaowine.winebrowser.ui.component.browser
 
 import android.graphics.Canvas
-import android.os.Handler
-import android.os.Looper
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,7 +25,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
@@ -69,7 +66,6 @@ fun BrowserTab(
     currentTabIndex: Int = 0
 ) {
     val coroutineScope = rememberCoroutineScope()
-    val uiHandler = remember { Handler(Looper.getMainLooper()) }
 
     // 当标签菜单显示时，为所有缺少预览的标签页生成预览
     LaunchedEffect(show.value) {
@@ -84,13 +80,13 @@ fun BrowserTab(
 
                     // 先为当前标签页生成预览
                     currentTab?.let { tab ->
-                        captureTabPreview(tab, uiHandler)
+                        captureTabPreview(tab)
                     }
-                    
+
                     // 然后异步为其他所有标签页生成预览
                     listTab.forEachIndexed { index, tab ->
                         if (index != currentTabIndex && tab.thumbnail == null && tab.webView != null) {
-                            captureTabPreview(tab, uiHandler)
+                            captureTabPreview(tab)
                         }
                     }
                 }
@@ -199,12 +195,12 @@ fun BrowserTab(
 /**
  * 为标签页生成预览图
  */
-private suspend fun captureTabPreview(tab: WebViewTabData, uiHandler: Handler) {
+private suspend fun captureTabPreview(tab: WebViewTabData) {
     val webView = tab.webView ?: return
-    
+
     // 确保WebView有内容
     if (webView.width <= 0 || webView.height <= 0) return
-    
+
     withContext(Dispatchers.Main) {
         try {
             // 记录当前可见状态
@@ -212,30 +208,24 @@ private suspend fun captureTabPreview(tab: WebViewTabData, uiHandler: Handler) {
             if (!wasVisible) {
                 webView.visibility = android.view.View.VISIBLE
             }
-            
-            // 延迟一小段时间等待渲染
-            uiHandler.post {
-                try {
-                    // 创建适当大小的缩略图
-                    val scale = 0.5f // 缩小比例以提高性能
-                    val width = (webView.width * scale).toInt().coerceAtLeast(1)
-                    val height = (webView.height * scale).toInt().coerceAtLeast(1)
-                    
-                    val bitmap = createBitmap(width, height)
-                    val canvas = Canvas(bitmap)
-                    canvas.scale(scale, scale)
-                    
-                    // 绘制WebView内容到缩略图
-                    webView.draw(canvas)
-                    tab.thumbnail = bitmap
-                    
-                    // 还原之前的可见状态
-                    if (!wasVisible) {
-                        webView.visibility = android.view.View.GONE
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+
+
+            // 创建适当大小的缩略图
+            val scale = 0.5f // 缩小比例以提高性能
+            val width = (webView.width * scale).toInt().coerceAtLeast(1)
+            val height = (webView.height * scale).toInt().coerceAtLeast(1)
+
+            val bitmap = createBitmap(width, height)
+            val canvas = Canvas(bitmap)
+            canvas.scale(scale, scale)
+
+            // 绘制WebView内容到缩略图
+            webView.draw(canvas)
+            tab.thumbnail = bitmap
+
+            // 还原之前的可见状态
+            if (!wasVisible) {
+                webView.visibility = android.view.View.GONE
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -313,6 +303,7 @@ private fun TabPreviewCard(
                                         .split("/").firstOrNull() ?: ""
                                     if (domain.isNotEmpty()) domain.first().toString() else "N"
                                 }
+
                                 else -> "N"
                             }
 

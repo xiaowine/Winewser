@@ -227,7 +227,7 @@ fun BrowserPage(
 
     // 初始化第一个标签页
     LaunchedEffect(Unit) {
-        if (tabs.isEmpty() && loadState.initialUrl.value.isNotEmpty()) {
+        if (tabs.isEmpty()) {
             tabs.add(WebViewTabData(url = loadState.initialUrl.value))
         }
     }
@@ -362,7 +362,6 @@ fun BrowserPage(
             focusManager = focusManager,
             isSearchState = isSearchState,
             webViewState = webViewState,
-            currentTab = currentTab,
             tabs = tabs,
             currentTabIndex = currentTabIndex,
             navController = navController
@@ -540,7 +539,6 @@ private fun handleBackPress(
     focusManager: FocusManager,
     isSearchState: MutableState<Boolean>,
     webViewState: MutableState<WebView?>,
-    currentTab: WebViewTabData,
     tabs: MutableList<WebViewTabData>,
     currentTabIndex: MutableState<Int>,
     navController: NavController
@@ -548,21 +546,11 @@ private fun handleBackPress(
     // 处理焦点状态
     if (isFieldFocused) {
         focusManager.clearFocus()
-        return
-    }
-
-    // 空标题页面返回主页
-    if (currentTab.title.isEmpty()) {
-        navController.navigate("home") {
-            popUpTo(0) { inclusive = false }
-        }
-        return
     }
 
     // 处理搜索状态
     if (isSearchState.value) {
         isSearchState.value = false
-        return
     }
 
     // 处理网页返回

@@ -50,7 +50,6 @@ fun HomePage(
     var testSate by remember { mutableStateOf("Wine Browser") }
     val context = LocalContext.current
 
-
     Scaffold(
         content = { paddingValues ->
             Column(

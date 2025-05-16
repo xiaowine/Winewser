@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.xiaowine.winebrowser.ui.theme.AppTheme
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
+import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.NavigatorSwitch
 import top.yukonga.miuix.kmp.icon.icons.useful.Refresh
@@ -43,7 +44,7 @@ fun BrowserSearchField(
     siteIconState: MutableState<Bitmap?>,
     isLoading: () -> Boolean,
 ) {
-    BrowserTextField(
+    TextField(
         value = searchText,
         onValueChange = {
             val filteredText = it.copy(text = it.text.replace("\n", ""))

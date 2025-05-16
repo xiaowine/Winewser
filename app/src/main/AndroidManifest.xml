@@ -20,6 +20,7 @@
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.酒域"
+            android:windowSoftInputMode="adjustResize"
             tools:ignore="RedundantLabel">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

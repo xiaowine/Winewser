@@ -1,6 +1,7 @@
 package com.xiaowine.winebrowser.ui.pages
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.captionBarPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -47,6 +48,7 @@ fun HomePage(
     navController: NavController = NavController(LocalContext.current),
 ) {
     var isMenuState = rememberSaveable { mutableStateOf(false) }
+    var isEditMode = remember { mutableStateOf(false) }
     var testSate by remember { mutableStateOf("Wine Browser") }
     val context = LocalContext.current
 
@@ -55,7 +57,13 @@ fun HomePage(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .padding(paddingValues)
+                    .clickable(
+                        indication = null,
+                        interactionSource = null
+                    ) {
+                        if (isEditMode.value) isEditMode.value = false
+                    },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 HomeHeadline()
@@ -69,7 +77,7 @@ fun HomePage(
 //                    }
                 )
                 HomeSearchBar(navController)
-                HomeShortcut(navController)
+                HomeShortcut(navController, isEditMode)
             }
         },
         floatingToolbar = {

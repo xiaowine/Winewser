@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.xiaowine.winebrowser.BuildConfig
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
@@ -25,30 +26,17 @@ import com.xiaowine.winebrowser.ui.component.home.HomeHeadline
 import com.xiaowine.winebrowser.ui.component.home.HomeSearchBar
 import com.xiaowine.winebrowser.ui.component.home.HomeShortcut
 import com.xiaowine.winebrowser.ui.component.home.HomeToolbar
+import com.xiaowine.winebrowser.ui.viewmodel.HomeViewModel
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.ToolbarPosition
-
-//@Composable
-//@Preview(showSystemUi = true, device = "spec:parent=pixel_fold")
-//@Preview(showSystemUi = true)
-//@Preview(
-//    showSystemUi = true,
-//    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL
-//)
-//fun TestHomePage() {
-//    MiuixTheme {
-//        App()
-//    }
-//}
-
 
 @Composable
 fun HomePage(
     navController: NavController = NavController(LocalContext.current),
 ) {
+    val viewModel: HomeViewModel = viewModel()
     var isMenuState = rememberSaveable { mutableStateOf(false) }
-    var isEditMode = remember { mutableStateOf(false) }
     var testSate by remember { mutableStateOf("Wine Browser") }
     val context = LocalContext.current
 
@@ -62,22 +50,16 @@ fun HomePage(
                         indication = null,
                         interactionSource = null
                     ) {
-                        if (isEditMode.value) isEditMode.value = false
+                        if (viewModel.isEditMode.value) viewModel.isEditMode.value = false
                     },
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 HomeHeadline()
                 Text(
                     testSate,
-//                    modifier = Modifier.clickable {
-//                        val db = getDB(context)
-//                        MainScope().launch {
-//                            testSate = "历史记录数: $0"
-//                        }
-//                    }
                 )
                 HomeSearchBar(navController)
-                HomeShortcut(navController, isEditMode)
+                HomeShortcut(navController, viewModel)
             }
         },
         floatingToolbar = {
@@ -97,4 +79,3 @@ fun HomePage(
         )
     }
 }
-

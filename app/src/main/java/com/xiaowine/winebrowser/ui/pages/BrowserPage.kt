@@ -41,7 +41,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.xiaowine.winebrowser.data.WebViewTabData
 import com.xiaowine.winebrowser.data.entity.SearchHistoryEntity
-import com.xiaowine.winebrowser.model.SearchHistoryViewModel
+import com.xiaowine.winebrowser.ui.viewmodel.SearchHistoryViewModel
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.WebViewLayout
 import com.xiaowine.winebrowser.ui.component.browser.BrowserButtonBar

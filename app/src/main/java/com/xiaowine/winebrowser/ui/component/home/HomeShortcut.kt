@@ -1,6 +1,5 @@
 package com.xiaowine.winebrowser.ui.component.home
 
-import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,26 +13,20 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.xiaowine.winebrowser.data.InitData.defaultShortcuts
-import com.xiaowine.winebrowser.data.entity.AppEntity
 import com.xiaowine.winebrowser.data.entity.HomeShortcutEntity
 import com.xiaowine.winebrowser.ui.component.FlowLayout
-import com.xiaowine.winebrowser.utils.Utils.getDB
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.xiaowine.winebrowser.ui.viewmodel.HomeViewModel
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -41,20 +34,18 @@ import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.extra.SuperDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+
 @Composable
 fun HomeShortcut(
     navController: NavController,
-    isEditMode: MutableState<Boolean>,
+    viewModel: HomeViewModel
 ) {
     var showDialog = remember { mutableStateOf(false) }
-    var shortcutList = remember { mutableStateOf<List<HomeShortcutEntity>>(emptyList()) }
-    val coroutineScope = rememberCoroutineScope()
-    val scrollState = rememberScrollState()
-    val context = LocalContext.current
 
-    LaunchedEffect(Unit) {
-        initializeIfNeededAndGet(context, shortcutList)
-    }
+    val shortcutLists = viewModel.shortcuts.collectAsState()
+
+    val isLoading by remember { viewModel.isLoading }
+    val scrollState = rememberScrollState()
 
     Column(
         modifier = Modifier
@@ -67,9 +58,9 @@ fun HomeShortcut(
             horizontalSpacing = 8.dp,
             verticalSpacing = 16.dp
         ) {
-            if (shortcutList.value.isNotEmpty()) {
+            if (!isLoading) {
                 // 渲染数据库中的快捷方式
-                shortcutList.value.forEach { shortcutEntity ->
+                shortcutLists.value.forEach { shortcutEntity ->
                     HomeShortcutItem(
                         itemData = shortcutEntity,
                         onClick = {
@@ -77,13 +68,9 @@ fun HomeShortcut(
                                 launchSingleTop = true
                             }
                         },
-                        isEditMode = isEditMode,
+                        isEditMode = viewModel.isEditMode,
                         onDelete = { itemData ->
-                            coroutineScope.launch(Dispatchers.IO) {
-                                deleteShortcut(context, itemData)
-                                val db = getDB(context)
-                                shortcutList.value = db.homeShortcutData().getAllDirect()
-                            }
+                            viewModel.deleteShortcut(itemData)
                         }
                     )
                 }
@@ -107,15 +94,11 @@ fun HomeShortcut(
                 .size(50.dp)
         )
     }
+
     AddNewShortcutDialog(
         showDialog = showDialog,
         onSaveShortcut = { title, url ->
-            coroutineScope.launch {
-                saveNewShortcut(context, title, url)
-                shortcutList.value = withContext(Dispatchers.IO) {
-                    getDB(context).homeShortcutData().getAllDirect()
-                }
-            }
+            viewModel.addShortcut(title, url)
         }
     )
 }
@@ -129,7 +112,6 @@ fun AddNewShortcutDialog(
     val urlState = remember { mutableStateOf(TextFieldValue("")) }
     val titleError = remember { mutableStateOf(false) }
     val urlError = remember { mutableStateOf(false) }
-    val context = LocalContext.current
 
     SuperDialog(
         title = "添加新快捷方式",
@@ -234,47 +216,4 @@ fun AddNewShortcutDialog(
 
 fun isValidUrl(url: String): Boolean {
     return url.isNotBlank() && (url.startsWith("http://") || url.startsWith("https://"))
-}
-
-suspend fun saveNewShortcut(context: Context, title: String, url: String) {
-    withContext(Dispatchers.IO) {
-        val db = getDB(context)
-        val newShortcut = HomeShortcutEntity(
-            title = title,
-            url = url,
-            base64Icon = null // 可以在这里添加默认图标或者留空
-        )
-        db.homeShortcutData().insert(newShortcut)
-    }
-}
-
-suspend fun initializeIfNeededAndGet(context: Context, shortcutList: MutableState<List<HomeShortcutEntity>>) {
-    withContext(Dispatchers.IO) {
-        val db = getDB(context)
-        val appEntity = db.appData().get()
-
-        // 检查是否需要初始化
-        if (appEntity == null || !appEntity.isInitialized) {
-            db.runInTransaction {
-                // 添加默认快捷方式
-                db.homeShortcutData().insertAll(defaultShortcuts)
-            }
-            // 更新或创建应用配置
-            if (appEntity == null) {
-                db.appData().insert(AppEntity(isInitialized = true))
-            } else {
-                db.appData().update(appEntity.copy(isInitialized = true))
-            }
-        }
-
-        // 无论是否初始化，都加载最新的快捷方式列表
-        shortcutList.value = db.homeShortcutData().getAllDirect()
-    }
-}
-
-suspend fun deleteShortcut(context: Context, shortcut: HomeShortcutEntity) {
-    withContext(Dispatchers.IO) {
-        val db = getDB(context)
-        db.homeShortcutData().delete(shortcut)
-    }
 }

@@ -1,17 +1,17 @@
-package com.xiaowine.winebrowser.model
+package com.xiaowine.winebrowser.ui.viewmodel
 
 import android.app.Application
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.xiaowine.winebrowser.data.entity.SearchHistoryEntity
-import com.xiaowine.winebrowser.utils.Utils.getDB
+import com.xiaowine.winebrowser.utils.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class SearchHistoryViewModel(application: Application) : AndroidViewModel(application) {
-    private val db =  getDB(application)
+    private val db = Utils.getDB(application)
 
 
     val historyList = mutableStateOf<List<SearchHistoryEntity>>(emptyList())

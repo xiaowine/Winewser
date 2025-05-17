@@ -422,7 +422,7 @@ fun BrowserPage(
                 // 搜索状态下显示历史记录
                 if (isSearchState.value) {
                     RenderSearchHistoryPanel(
-                        currentTab = currentTab,
+                        currentTab = remember { mutableStateOf(currentTab) },
                         historyList = historyList,
                         searchText = uiState.searchText,
                         performSearchOrNavigate = tabOperations.performSearchOrNavigate
@@ -502,6 +502,125 @@ fun BrowserPage(
         )
     }
 }
+
+
+/**
+ * 渲染搜索历史面板
+ */
+@Composable
+private fun RenderSearchHistoryPanel(
+    currentTab: MutableState<WebViewTabData>,
+    historyList: List<SearchHistoryEntity>,
+    searchText: MutableState<TextFieldValue>,
+    performSearchOrNavigate: (String) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MiuixTheme.colorScheme.background)
+            .padding(horizontal = 5.dp)
+    ) {
+        // 显示当前站点信息（如果有）
+        if (currentTab.value.title.isNotEmpty()) {
+            BrowserNowSiteInfo(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 16.dp)
+                    .padding(bottom = 10.dp),
+                urlState = remember { mutableStateOf(currentTab.value.url) },
+                titleState = remember { mutableStateOf(currentTab.value.title) },
+                searchText = searchText,
+            )
+        }
+
+        // 搜索历史面板
+        BrowserSearchHistoryPanel(
+            modifier = Modifier.fillMaxSize(),
+            historyList = historyList,
+            onSelected = performSearchOrNavigate
+        )
+    }
+}
+
+/**
+ * 渲染所有标签页的WebView
+ */
+@Composable
+private fun RenderTabWebViews(
+    tabs: List<WebViewTabData>,
+    currentTabIndex: Int,
+    isSearchState: Boolean,
+    webViewState: MutableState<WebView?>,
+    webViewUrlState: MutableState<String>,
+    currentTabIconState: MutableState<Bitmap?>,
+    currentTabProgressState: MutableState<Int>,
+    searchText: MutableState<TextFieldValue>,
+    themeColor: Color,
+    webViewReady: MutableState<Boolean>,
+    coroutineScope: CoroutineScope
+) {
+    tabs.forEachIndexed { index, tab ->
+        val isVisible = index == currentTabIndex && !isSearchState
+        WebViewLayout(
+            modifier = Modifier.fillMaxSize(),
+            onTitleChange = { newTitle ->
+                tab.title = newTitle
+                if (isVisible) {
+                    searchText.value = TextFieldValue(newTitle)
+                }
+            },
+            onIconChange = { newIcon ->
+                tab.icon = newIcon
+                if (index == currentTabIndex) {
+                    currentTabIconState.value = newIcon
+                }
+            },
+            onPageStarted = { loadedUrl ->
+                if (loadedUrl.isNotEmpty()) {
+                    tab.url = loadedUrl
+                    if (index == currentTabIndex) {
+                        // 只在当前标签页更新URL状态
+                        webViewUrlState.value = loadedUrl
+                    }
+                }
+            },
+            onPageColorChange = { newColor ->
+                val defaultColor = themeColor.value.toInt()
+                if (newColor == -1) {
+                    tab.themeColor = defaultColor
+                    return@WebViewLayout
+                }
+
+                tab.themeColor = if (isColorSimilar(Color(newColor), themeColor)) {
+                    defaultColor
+                } else {
+                    newColor
+                }
+            },
+            onProgressChanged = { newProgress ->
+                tab.progress = newProgress
+                if (index == currentTabIndex) {
+                    currentTabProgressState.value = newProgress
+
+                    // 当页面加载完成时（100%）自动截图
+                    if (newProgress == 100) {
+                        captureWebViewSnapshot(tab, coroutineScope)
+                    }
+                }
+            },
+            onWebViewCreated = { webView ->
+                tab.webView = webView
+                if (index == currentTabIndex) {
+                    webViewState.value = webView
+                    // 标记WebView已准备好
+                    webViewReady.value = true
+                }
+            },
+            isVisible = isVisible
+        )
+    }
+}
+
 
 /**
  * 构建搜索或导航的URL
@@ -619,122 +738,5 @@ private fun captureWebViewSnapshot(tab: WebViewTabData, coroutineScope: Coroutin
                 e.printStackTrace()
             }
         }
-    }
-}
-
-/**
- * 渲染搜索历史面板
- */
-@Composable
-private fun RenderSearchHistoryPanel(
-    currentTab: WebViewTabData,
-    historyList: List<SearchHistoryEntity>,
-    searchText: MutableState<TextFieldValue>,
-    performSearchOrNavigate: (String) -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MiuixTheme.colorScheme.background)
-            .padding(horizontal = 5.dp)
-    ) {
-        // 显示当前站点信息（如果有）
-        if (currentTab.title.isNotEmpty()) {
-            BrowserNowSiteInfo(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .padding(top = 16.dp)
-                    .padding(bottom = 10.dp),
-                urlState = remember { mutableStateOf(currentTab.url) },
-                titleState = remember { mutableStateOf(currentTab.title) },
-                searchText = searchText,
-            )
-        }
-
-        // 搜索历史面板
-        BrowserSearchHistoryPanel(
-            modifier = Modifier.fillMaxSize(),
-            historyList = historyList,
-            onSelected = performSearchOrNavigate
-        )
-    }
-}
-
-/**
- * 渲染所有标签页的WebView
- */
-@Composable
-private fun RenderTabWebViews(
-    tabs: List<WebViewTabData>,
-    currentTabIndex: Int,
-    isSearchState: Boolean,
-    webViewState: MutableState<WebView?>,
-    webViewUrlState: MutableState<String>,
-    currentTabIconState: MutableState<Bitmap?>,
-    currentTabProgressState: MutableState<Int>,
-    searchText: MutableState<TextFieldValue>,
-    themeColor: Color,
-    webViewReady: MutableState<Boolean>,
-    coroutineScope: CoroutineScope
-) {
-    tabs.forEachIndexed { index, tab ->
-        val isVisible = index == currentTabIndex && !isSearchState
-        WebViewLayout(
-            modifier = Modifier.fillMaxSize(),
-            onTitleChange = { newTitle ->
-                tab.title = newTitle
-                if (index == currentTabIndex) {
-                    searchText.value = TextFieldValue(newTitle)
-                }
-            },
-            onIconChange = { newIcon ->
-                tab.icon = newIcon
-                if (index == currentTabIndex) {
-                    currentTabIconState.value = newIcon
-                }
-            },
-            onPageStarted = { loadedUrl ->
-                if (loadedUrl.isNotEmpty()) {
-                    tab.url = loadedUrl
-                    if (index == currentTabIndex) {
-                        // 只在当前标签页更新URL状态
-                        webViewUrlState.value = loadedUrl
-                    }
-                }
-            },
-            onPageColorChange = { newColor ->
-                val defaultColor = themeColor.value.toInt()
-                if (newColor == -1) {
-                    tab.themeColor = defaultColor
-                    return@WebViewLayout
-                }
-
-                tab.themeColor = if (isColorSimilar(Color(newColor), themeColor)) {
-                    defaultColor
-                } else {
-                    newColor
-                }
-            },
-            onProgressChanged = { newProgress ->
-                tab.progress = newProgress
-                if (index == currentTabIndex) {
-                    currentTabProgressState.value = newProgress
-
-                    // 当页面加载完成时（100%）自动截图
-                    if (newProgress == 100) {
-                        captureWebViewSnapshot(tab, coroutineScope)
-                    }
-                }
-            },
-            onWebViewCreated = { webView ->
-                tab.webView = webView
-                if (index == currentTabIndex) {
-                    webViewState.value = webView
-                    // 标记WebView已准备好
-                    webViewReady.value = true
-                }
-            },
-            isVisible = isVisible
-        )
     }
 }

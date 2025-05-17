@@ -35,6 +35,7 @@ fun BrowserButtonBar(
     isTabMenuState: MutableState<Boolean>,
     onCreateNewWebView: () -> Unit = {},
     tabCount: Int = 1,
+    onBack: () -> Unit,
 ) {
     Row(
         modifier = modifier
@@ -71,13 +72,7 @@ fun BrowserButtonBar(
                     ) {
                         when (i) {
                             0 -> {
-                                if (webView?.canGoBack() == true) {
-                                    webView.goBack()
-                                } else {
-                                    navController.navigate("home") {
-                                        popUpTo(0) { inclusive = false }
-                                    }
-                                }
+                                onBack()
                             }
 
                             1 -> {

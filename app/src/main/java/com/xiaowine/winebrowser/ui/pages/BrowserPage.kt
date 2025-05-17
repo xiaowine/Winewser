@@ -41,7 +41,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.xiaowine.winebrowser.data.WebViewTabData
 import com.xiaowine.winebrowser.data.entity.SearchHistoryEntity
-import com.xiaowine.winebrowser.ui.viewmodel.SearchHistoryViewModel
 import com.xiaowine.winebrowser.ui.component.FPSMonitor
 import com.xiaowine.winebrowser.ui.component.WebViewLayout
 import com.xiaowine.winebrowser.ui.component.browser.BrowserButtonBar
@@ -50,6 +49,7 @@ import com.xiaowine.winebrowser.ui.component.browser.BrowserNowSiteInfo
 import com.xiaowine.winebrowser.ui.component.browser.BrowserSearchField
 import com.xiaowine.winebrowser.ui.component.browser.BrowserSearchHistoryPanel
 import com.xiaowine.winebrowser.ui.component.browser.BrowserTab
+import com.xiaowine.winebrowser.ui.viewmodel.SearchHistoryViewModel
 import com.xiaowine.winebrowser.utils.Utils.isColorSimilar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -462,7 +462,18 @@ fun BrowserPage(
                     isMenuState = uiState.isMenuOpenState,
                     onCreateNewWebView = tabOperations.createNewTab,
                     tabCount = tabs.size,
-                    isTabMenuState = uiState.isTabMenuOpenState
+                    isTabMenuState = uiState.isTabMenuOpenState,
+                    onBack = {
+                        handleBackPress(
+                            isFieldFocused = false,
+                            focusManager = focusManager,
+                            isSearchState = isSearchState,
+                            webViewState = webViewState,
+                            tabs = tabs,
+                            currentTabIndex = currentTabIndex,
+                            navController = navController
+                        )
+                    }
                 )
             }
         },
@@ -561,6 +572,7 @@ private fun handleBackPress(
         tabs.removeAt(currentTabIndex.value)
         currentTabIndex.value -= 1
     } else {
+        tabs.removeAll { true }
         // 返回主页
         navController.navigate("home") {
             popUpTo(0) { inclusive = false }

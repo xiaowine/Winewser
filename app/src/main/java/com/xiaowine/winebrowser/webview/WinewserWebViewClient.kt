@@ -26,7 +26,6 @@ class WinewserWebViewClient(
         view?.post {
             view.postVisualStateCallback(12345, object : VisualStateCallback() {
                 override fun onComplete(requestId: Long) {
-                    println("onComplete: $requestId")
                     try {
                         // 创建一个与顶部区域相同大小的位图
                         val bitmap = createBitmap(view.width, 20)
@@ -85,8 +84,8 @@ class WinewserWebViewClient(
                             // 回收位图
                             bitmap.recycle()
                         }
-                    } catch (e: Exception) {
-                        println("Error getting dominant color\n$e")
+                    } catch (_: Exception) {
+//                        println("Error getting dominant color\n$e")
                     }
                 }
             })

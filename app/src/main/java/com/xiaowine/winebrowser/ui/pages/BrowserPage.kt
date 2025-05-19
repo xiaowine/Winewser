@@ -676,6 +676,9 @@ private fun handleBackPress(
     // 处理搜索状态
     if (isSearchState.value) {
         isSearchState.value = false
+        if (!(tabs.size > 1 && currentTabIndex.value > 0)) {
+            if (tabs[currentTabIndex.value].url != "") return
+        }
     }
 
     // 处理网页返回

@@ -18,8 +18,6 @@ import kotlin.math.abs
 
 object Utils {
 
-    var isPreview: Boolean = true
-
     fun getDB(context: Context): AppDatabase {
         return Room.databaseBuilder(
             context,

@@ -9,7 +9,6 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -22,7 +21,6 @@ import com.xiaowine.winebrowser.ui.appLightColorScheme
 import com.xiaowine.winebrowser.ui.pages.BrowserPage
 import com.xiaowine.winebrowser.ui.pages.HomePage
 import com.xiaowine.winebrowser.ui.theme.AppTheme
-import com.xiaowine.winebrowser.utils.Utils
 import top.yukonga.miuix.kmp.theme.darkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
 
@@ -41,9 +39,6 @@ fun App(
     } else {
         appLightColorScheme()
     }
-
-    val isPreview = LocalInspectionMode.current
-    Utils.isPreview = isPreview
 
     // 用 rememberSaveable 保持 isSearchState 状态
     val isSearchState = rememberSaveable { mutableStateOf(false) }

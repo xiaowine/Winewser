@@ -21,7 +21,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.xiaowine.winebrowser.BuildConfig
-import com.xiaowine.winebrowser.utils.Utils
 import com.xiaowine.winebrowser.webview.WinewserWebChromeClient
 import com.xiaowine.winebrowser.webview.WinewserWebViewClient
 
@@ -56,8 +55,6 @@ fun WebViewLayout(
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
-
-    if (Utils.isPreview) return
 
     AndroidView(
         modifier = modifier.background(Color.Transparent),

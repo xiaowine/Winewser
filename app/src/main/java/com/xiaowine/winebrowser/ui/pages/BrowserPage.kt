@@ -694,11 +694,11 @@ private fun handleBackPress(
         tabs.removeAt(currentTabIndex.value)
         currentTabIndex.value -= 1
     } else {
-        tabs.removeAll { true }
         // 返回主页
         navController.navigate("home") {
             popUpTo(0) { inclusive = false }
         }
+        tabs.removeAll { true }
     }
 }
 
